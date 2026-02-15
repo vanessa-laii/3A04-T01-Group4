@@ -392,17 +392,6 @@ performance requirements, operational requirements, maintainability, security, a
 \section{Non-Functional Requirements}
 \label{sec:non-functional_requirements}
 
-
-\begin{itemize}
-	\item For each non-functional requirement, provide a justification/rationale for it.\\
-	{\bf Example:} \\
-	SC1. \emph{The device should not explode in a customer’s pocket.}\\
-	{\bf Rationale:} Other companies have had issues with the batteries they used in their phones randomly exploding [insert citation]. This causes a safety issue, as the phone is often carried in a person's hand or pocket.	
-	\item If you need to make a guess because you couldn't really talk to stakeholders, you can say "We imagined stakeholders would want...because..."
-	\item Each requirement should have a unique label/number for it.
-	\item In the list below, if a particular section doesn't apply, just write N/A so we know you considered it.
-\end{itemize}
-
 % Begin Section
 \subsection{Look and Feel Requirements}
 \label{sub:look_and_feel_requirements}
@@ -412,7 +401,13 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:appearance_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{LF-A}1. ]
-	\item 
+	\item The application should use a distinct colour scheme that is in adherence with the companies brand colours.\newline
+	{\bf Rationale:} The application's UI should be consistent and professional to establish a sense of trust in the product's users [1].
+	\item All text in the application should be at least 14-px in size.\newline
+	{\bf Rationale:} The text in the application should follow font-size conventions to be large enough so it is easy to read for a wide range of individuals with varying vision levels [1].
+	\item The background colours of pages should contrast with the interactive elements (alert notifications, buttons, icons) directly on top of them.\newline
+	{\bf Rationale:} The interactive elements on the page should stand out from the background elements in order to indicate what can be interacted with on the page [1].
+
 \end{enumerate}
 % End SubSubSection
 
@@ -420,7 +415,12 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:style_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{LF-S}1. ]
-	\item 
+	\item The application's interface should be built for a resolution of 1920x1080 and be compatible with various screen sizes across desktop devices.\newline
+	{\bf Rationale:} As the interface will be used across many different desktop devices with varying screen sizes, the interface's size must be adaptable so all users can view the application as intended. 1920x1080 has been selected as the default size as it is the most common resolution on modern desktop devices [2].
+	\item The application's interface must utilize modern conventions of professional software UI/UX to achieve a professional and minimalist design.\newline
+	{\bf Rationale:} Adhering to commonly used UI/UX design principles will make the application look polished and professional, instilling trust in the user. Using well-known conventions of web design will also help the application to be more user-friendly [3].
+	\item All main pages of the application interface should be accessible from one menu (e.g. a navigation bar).\newline
+	{\bf Rationale:} The application should be simple to navigate, and users should not have to search through many menus to find crucial features [4].
 \end{enumerate}
 % End SubSubSection
 
@@ -434,7 +434,8 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:ease_of_use_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{UH-EOU}1. ]
-	\item 
+	\item The system must include a help menu for users, including a frequently asked questions page, and tutorial pages for how to navigate.\newline
+	{\bf Rationale:} A frequently asked questions page will be a helpful resource for users by providing answers to repetitive inquiries [5].
 \end{enumerate}
 % End SubSubSection
 
@@ -442,7 +443,8 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:personalization_and_internationalization_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{UH-PI}1. ]
-	\item 
+	\item The system must allow users to configure personal preferences in the account settings. Features that must be selectable are light or dark mode and accessibility routes highlighted on the maps for users with disabilities.\newline
+	{\bf Rationale:} Enabling user-defined preferences improves the overall user experience and decreases task time [6]. The software will provide equitable utility for different users, making the application more inclusive.
 \end{enumerate}
 % End SubSubSection
 
@@ -450,7 +452,8 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:learning_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{UH-L}1. ]
-	\item 
+	\item The system must allow any third-party developer to successfully request and interpret environmental data within a two-hour time frame.\newline
+	{\bf Rationale:} A short learning curve ensures the API is intuitive and well-documented for the public. A short onboarding period encourages adoption of the REST API and improves developer productivity [4].
 \end{enumerate}
 % End SubSubSection
 
@@ -458,7 +461,8 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:understandability_and_politeness_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{UH-UP}1. ]
-	\item 
+	\item The proficiency requirements for understanding any language being used in the system shall not exceed the B1 language proficiency level.\newline
+	{\bf Rationale:} The system application should be understandable to a wide range of people and a B1 proficiency level indicates the user can handle everyday situations and express opinions [7].
 \end{enumerate}
 % End SubSubSection
 
@@ -466,7 +470,8 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:accessibility_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{UH-A}1. ]
-	\item 
+	\item The system must have a setting to turn off the use of bright colours in the dashboard and map.\newline
+	{\bf Rationale:} Highly saturated colours are hard on the eyes and can cause visual fatigue when viewing for extended periods of time [8].
 \end{enumerate}
 % End SubSubSection
 
@@ -480,7 +485,12 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:speed_and_latency_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{PR-SL}1. ]
-	\item 
+	\item The system shall ensure the latency of the data appearing on the City Operator dashboard does not exceed 1.5 seconds.\newline
+	{\bf Rationale:} Any delay in getting information to a city official directly increases the risk to public safety [4].
+	\item The system shall authenticate a user and load their specific role-based dashboard in less than 3 seconds after the user clicks login.\newline
+	{\bf Rationale:} For City Operators, they would need to respond to events in a fast manner, as a delay in logging in during a crisis could delay critical decision-making [4].
+	\item The Public API shall return the requested data within 1 second.\newline
+	{\bf Rationale:} Fast access to public data is essential for transparency and third-party developers. If the public-facing tools are slow, users are less likely to use the system for daily planning [9].
 \end{enumerate}
 % End SubSubSection
 
@@ -488,7 +498,7 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:safety_critical_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{PR-SC}1. ]
-	\item 
+	\item N/A
 \end{enumerate}
 % End SubSubSection
 
@@ -496,7 +506,10 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:precision_or_accuracy_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{PR-PA}1. ]
-	\item 
+	\item The system shall store and display all numerical data (e.g., temperature, humidity, and particulate matter) to at least two decimal places.\newline
+	{\bf Rationale:} High-resolution data is needed to identify subtle environmental trends. Rounding to the nearest whole number can hide small changes in events, which could prevent the alert of an event. This level of detail is necessary to detect the beginning trends before they cross the thresholds [4].
+	\item The system shall represent sensor locations and alert markers on the geographical map with coordinate precision of at least 1 meter.\newline
+	{\bf Rationale:} As stated in Section 2.1, the system must allow officials to pinpoint exact locations of hazards. Low-precision coordinates could place an alert on the wrong area, leading to responders to the incorrect location [10].
 \end{enumerate}
 % End SubSubSection
 
@@ -504,7 +517,10 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:reliability_and_availability_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{PR-RA}1. ]
-	\item 
+	\item The system shall maintain an availability of 99.99\%, limiting the system updates and maintenance to no more than an hour a year.\newline
+	{\bf Rationale:} As the system is responsible for detecting hazards, it must be readily available. Despite the industry standard being an uptime of 99.99\% [11], it is not attainable even for most services. Most cloud service providers' setups could achieve 99.99\% availability [11].
+	\item If the system or database experiences an unplanned failure, it shall automatically recover and restore core services within 120 seconds, without manual intervention.\newline
+	{\bf Rationale:} Disaster recovery aims to minimize business disruption by restoring service quickly after failures. This requirement sets an explicit RTO to reduce the operational "blind spot" during time-sensitive environmental incidents [12].
 \end{enumerate}
 % End SubSubSection
 
@@ -512,7 +528,10 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:robustness_or_fault_tolerance_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{PR-RFT}1. ]
-	\item 
+	\item The system shall store all incoming sensor data in a local cache for up to 48 hours during a network or internet failure. Upon reconnection, the system shall automatically upload this data to the main database in chronological order.\newline
+	{\bf Rationale:} Smart-city sensor networks must tolerate intermittent connectivity, including extended outages during major emergencies. IoT architectures commonly support offline operation by using local caching so telemetry is not lost and can be reliably forwarded when connectivity returns [13].
+	\item The system shall continue to provide core functions, even if non-critical subsystems become unavailable.\newline
+	{\bf Rationale:} If one part of the app breaks, the whole system should not crash. Using "graceful degradation" ensures that essential tools remain available [14].
 \end{enumerate}
 % End SubSubSection
 
@@ -520,7 +539,8 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:capacity_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{PR-C}1. ]
-	\item 
+	\item The system shall support at least 50 concurrent City Operators performing dashboard actions simultaneously without data collision, inconsistent state, or system failure.\newline
+	{\bf Rationale:} Multiple city operators may operate the dashboard simultaneously. The system must handle concurrent access safely to prevent conflicting updates (such as simultaneous alert edits) and ensure operational continuity under peak load [15].
 \end{enumerate}
 % End SubSubSection
 
@@ -528,7 +548,8 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:scalability_or_extensibility_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{PR-SE}1. ]
-	\item 
+	\item The system shall be able to scale to support deployment in multiple cities of varying population sizes, with increases in the number of sensors, monitored zones, and concurrent users, without requiring an architectural redesign.\newline
+	{\bf Rationale:} Designing for scalability allows the system to grow in users, sensors, and coverage while maintaining performance and avoiding major redesign [4].
 \end{enumerate}
 % End SubSubSection
 
@@ -536,7 +557,8 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:longevity_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{PR-L}1. ]
-	\item 
+	\item The system shall be designed with a minimum operational lifespan of at least 10 years.\newline
+	{\bf Rationale:} This system is a large investment for a city, so to provide a high return on investment and ensure safety, the software must remain viable and maintainable without requiring a complete replacement [4].
 \end{enumerate}
 % End SubSubSection
 
@@ -550,7 +572,7 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:expected_physical_environment}
 % Begin SubSubSection
 \begin{enumerate}[{OE-EPE}1. ]
-	\item 
+	\item N/A
 \end{enumerate}
 % End SubSubSection
 
@@ -558,7 +580,10 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:requirements_for_interfacing_with_adjacent_systems}
 % Begin SubSubSection
 \begin{enumerate}[{OE-IA}1. ]
-	\item 
+	\item The system must implement a read-only REST API endpoint allowing third-party and public access to non-sensitive aggregated environmental data.\newline
+	{\bf Rationale:} It is important for the system to be able to get important safety information out to the general public, and providing this API to other services will facilitate this communication [4].
+	\item The system should be able to reliably receive and process data from designated sensors.\newline
+	{\bf Rationale:} The application must be able to receive sensor data in order to properly activate alerts and notify third party systems [4].
 \end{enumerate}
 % End SubSubSection
 
@@ -566,7 +591,8 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:productization_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{OE-P}1. ]
-	\item 
+	\item The application should be packaged in a zip file containing a README.\newline
+	{\bf Rationale:} The application should be quick to download and be easy to install and set up [4].
 \end{enumerate}
 % End SubSubSection
 
@@ -574,7 +600,8 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:release_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{OE-R}1. ]
-	\item 
+	\item The application should be compatible with the last 2 major versions of the Windows operating system.\newline
+	{\bf Rationale:} The system should be compatible with the most common desktop operating system worldwide [16].
 \end{enumerate}
 % End SubSubSection
 
@@ -588,7 +615,8 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:maintenance_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{MS-M}1. ]
-	\item 
+	\item The system must be designed for modular component (microservices) upgrades independent of the entire system.\newline
+	{\bf Rationale:} A long maintenance window can result in missed alerts during critical environmental events. This will reduce risk and overall system downtime by completing individual software patches [17].
 \end{enumerate}
 % End SubSubSection
 
@@ -596,7 +624,8 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:supportability_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{MS-S}1. ]
-	\item 
+	\item The system must show application health metrics such as API latency, error rates, traffic and host saturation for all administrators.\newline
+	{\bf Rationale:} Administrators must be able to resolve data ingestion failures and offline issues immediately [18].
 \end{enumerate}
 % End SubSubSection
 
@@ -604,7 +633,8 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:adaptability_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{MS-A}1. ]
-	\item 
+	\item The system architecture must support the addition of new data ingestion for different environmental metric types.\newline
+	{\bf Rationale:} Environments are constantly changing and there will be new climate trends to be monitored. The system must be sustainable long-term and support easy additions without changing core logic [19].
 \end{enumerate}
 % End SubSubSection
 
@@ -618,7 +648,10 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:access_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{SR-AC}1. ]
-	\item 
+	\item The system should only allow administrators to modify authenticated users and alert rules.\newline
+	{\bf Rationale:} There should be a way to add, manage, and delete users so that city operators can be successfully authenticated without public users having the same abilities. A Role-Based Access Control model [20] fits this need by defining a hierarchy of authentication levels through various roles.
+	\item The system should only allow city operators and system administrators to view the dashboard.\newline
+	{\bf Rationale:} Public users should not be permitted to access all data through the system dashboard since this could reveal sensitive data to the public. A Role-Based Access Control model [20] fits this need by defining a hierarchy of authentication levels through various roles.
 \end{enumerate}
 % End SubSubSection
 
@@ -626,7 +659,8 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:integrity_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{SR-INT}1. ]
-	\item 
+	\item Data should be encrypted while in transit.\newline
+	{\bf Rationale:} Sensitive sensor data could be read if not encrypted leading to potential security risks and data leaks [21]. By keeping data encrypted, users and clients can trust the product to keep their data safe which will improve trust.
 \end{enumerate}
 % End SubSubSection
 
@@ -634,7 +668,10 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:privacy_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{SR-P}1. ]
-	\item 
+	\item The system shall not collect, process, or store any personally identifiable information (PII).\newline
+	{\bf Rationale:} This will ensure compliance with privacy regulations while reducing legal, ethical, and security risks [21].
+	\item The public API shall only expose non-sensitive environmental data aggregated by city zone.\newline
+	{\bf Rationale:} Revealing precise sensor data to the public could reveal the location of sensors used in the city [21]. Giving aggregated data balances transparency with the security of the system.
 \end{enumerate}
 % End SubSubSection
 
@@ -642,7 +679,8 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:audit_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{SR-AU}1. ]
-	\item 
+	\item The system shall maintain an immutable log of all significant events, including alert triggers, alert acknowledgement and alert rule modifications.\newline
+	{\bf Rationale:} Maintaining an unmodifiable log of all events can be used to audit the system and to track administrative changes. This follows the guidelines for cybersecurity set out by the Government of Canada [21].
 \end{enumerate}
 % End SubSubSection
 
@@ -650,7 +688,8 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:immunity_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{SR-IM}1. ]
-	\item 
+	\item Public-facing interfaces shall enforce rate limits to protect against denial-of-service attacks and excessive data scraping.\newline
+	{\bf Rationale:} Limiting the rate public users can access the API should reduce the strain on servers and limit the risk of a successful denial-of-service attack. This method of resisting denial-of-service attacks is outlined in ITSG-33 (Security Control SC-5) [21].
 \end{enumerate}
 % End SubSubSection
 
@@ -664,7 +703,10 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:cultural_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{CP-C}1. ]
-	\item 
+	\item The system shall support all official languages of the country it is operating in.\newline
+	{\bf Rationale:} National language laws state that for government systems all official languages must be available [22].
+	\item The app and system will not use any offensive or hurtful language towards any individual or people group based on their; citizenship, gender, sexual orientation, religion, political views, disability status, or any other common identifier.\newline
+	{\bf Rationale:} Hate speech laws must be followed and all users should feel safe when using the app [23].
 \end{enumerate}
 % End SubSubSection
 
@@ -672,7 +714,8 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:political_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{CP-P}1. ]
-	\item 
+	\item The public facing app should not use fear inducing terms when describing alerts. Only scientifically backed terms will be used.\newline
+	{\bf Rationale:} To not create panic or fear when a fire or pollution alert is out [24].
 \end{enumerate}
 % End SubSubSection
 
@@ -686,7 +729,16 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:compliance_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{LR-COMP}1. ]
-	\item 
+	\item The app will not process any raw audio data. IoT devices will process audio and never transmit raw audio streams only sound levels.\newline
+	{\bf Rationale:} Live audio streaming without consent is wiretapping under the Personal Information Protection and Electronic Documents Act and the Criminal Code of Canada Section 184 [25] [26].
+	\item The app's public facing app will meet the AODA accessibility requirements.\newline
+	{\bf Rationale:} The app must meet the accessibility requirements by law [27].
+	\item All app data will be stored on servers inside the country of origin.\newline
+	{\bf Rationale:} This is the law on how municipalities have to collect and store data [27].
+	\item The app will contain immutable audit logs and have frequent backups all while being secure for a minimum of 7 years.\newline
+	{\bf Rationale:} The law states municipalities have to retain records in a secure manner to fulfill freedom of information requests and audits [28].
+	\item Environmental action taken by a user in the dashboard when responding to an event has to be legal.\newline
+	{\bf Rationale:} All environmental actions regarding pollution, toxicity, and waste, need to follow the Canadian Environmental Protection Act [29].
 \end{enumerate}
 % End SubSubSection
 
@@ -694,11 +746,18 @@ performance requirements, operational requirements, maintainability, security, a
 \label{ssub:standards_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{LR-STD}1. ]
-	\item 
+	\item The app will follow the W3C WCAG 2.1 Accessibility Guidelines.\newline
+	{\bf Rationale:} This is to meet AODA web standards [30].
 \end{enumerate}
 % End SubSubSection
 
 % End SubSection
+
+% End Section
+
+\section{Innovative Feature}
+\label{sec:innovative_feature}
+% Begin Section
 
 % End Section
 
