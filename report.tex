@@ -6,6 +6,7 @@
 \usepackage{amstext}
 \usepackage{amsthm}
 \usepackage{amsmath}
+\usepackage{array}
 \usepackage{enumerate}
 \usepackage{fancyhdr}
 \usepackage[margin=1in]{geometry}
@@ -22,6 +23,11 @@
 %------------------------------------------------------------------------------
 \hypersetup{breaklinks=true}
 \urlstyle{same}
+%------------------------------------------------------------------------------
+
+% Set image path
+%------------------------------------------------------------------------------
+\graphicspath{ {./images/} }
 %------------------------------------------------------------------------------
 
 % Header and Footer
@@ -177,95 +183,191 @@ requirements, maintainability, security, and political requirements.
 
 % End Section
 
+\newpage
 \section{Overall Product Description}
 \label{sec:overall_description}
 % Begin Section
 
-\begin{itemize}
-	\item This section should describe the general factors that affect the product and its requirements. 
-	\item It does not state specific requirements.
-	\item It provides a \emph{background} for those requirements and makes them easier to understand.
-\end{itemize}
-
-
 \subsection{Product Perspective}
 \label{sub:product_perspective}
 % Begin SubSection
-\begin{itemize}
-	\item Put the product into perspective with other related products, i.e., context
-	\item If the product is independent and totally self-contained, it should be stated here
-	\item If the SRS defines a product that is a component of a larger system, then this subsection should relate the requirements of that larger system to the functionality of the software being developed. Identify interfaces between that larger system and the software to be developed.
-	\item A block diagram showing the major components of the larger system, interconnections, and external interfaces can be helpful
-\end{itemize}
+SCEMAS is a smart city monitoring dashboard developed for environmental monitoring of the 
+average smart city built for a web application. Related products include Siemens MindSphere, 
+AxxonSoft (Safe City) and Cisco Kinetic for Cities, where city-wide data is monitored from 
+various IoT devices based on geographic zones. However SCEMAS differentiates itself by 
+focusing on unifying all environmental data into one centralized dashboard and database 
+with the ability to respond to events via built-in tools rather than just observing them. 
+The product will facilitate various roles of access, allowing users to be created, edited, 
+and removed, while keeping extensive historical logs of all user actions, alerts, and 
+collected data for auditing similar to the compliance standards found in the related 
+products. Various alerts and reminders can be created based on geographical zones and 
+real-time aggregated data like in AxxonSoft.\\\\
+The product will interact with the larger system of distributed IoT sensors utilizing the 
+MQTT protocol to protect the data and ensure system privacy and security. SCEMAS will act 
+as a central ingestion hub, receiving high-volume telemetry streams from sensors to detect 
+threshold violations in real-time. The product will also utilize real-world mapping 
+software such as OpenStreetMap or GoogleMaps to visualize these telemetry streams. Similar 
+to AxxonSoft map view, SCEMAS will overlay live heatmaps and alert markers on the geography, 
+allowing City Officials to pinpoint the exact location of environmental hazards and acknowledge 
+them directly from the map interface.\\\\
+The product will have a sub-system to export data for public use, using a secure getaway 
+allowing the city to share non-sensitive environmental information to an external public 
+facing website and a read-only API. This website will be open to the public and will have 
+a heatmap on limited metrics. This ensures City Officials have full command-and-control 
+capabilities of public facing data. 
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.75\linewidth]{A04_System.png}
+    \caption{SCEMAS System Diagram}
+    \label{fig:system_diagram}
+\end{figure}
 % End SubSection
 
 \subsection{Product Functions}
 \label{sub:product_functions}
 % Begin SubSection
-\begin{itemize}
-	\item Provide a \emph{summary} of the major functions that the software will perform.
-	\begin{itemize}
-		\item \textbf{Example}: An SRS for an accounting program may use this part to address customer account maintenance, customer statement, and invoice preparation without mentioning the vast amount of detail that each of those functions requires.
-	\end{itemize}
-	\item Functions should be organized in a way that makes the list of functions understandable to the customer or to anyone else reading the document for the first time 
-	\item Present the functions in a list format - each item should be one function, with a brief description of it
-	\item Textual or graphical methods can be used to show the different functions and their relationships
-	\begin{itemize}
-		\item Such a diagram is not intended to show a design of a product, but simply shows the logical relationships among variables
-	\end{itemize} 
-\end{itemize}
+The system functionality will be focused on both data collection and processing done 
+automatically as well as interactions between users and the system. At a high level, the 
+system is responsible for collecting environmental data, storing this data, calculating 
+aggregations of data series by city zone, and comparing stored alert configurations to 
+present data. The city operators and administrators can interact with this system through 
+a dashboard interface while public users can use a public facing API that provides different 
+functionality from the city dashboard. An important property of the system is that it has 
+functionality to authenticate users and limit the access of different users based on their role. 
+
+\begin{center}
+\begin{tabular}{ |m{2in}|m{4.5in}| } 
+ \hline
+ \bf{Function} & \bf{Description} \\ 
+ \hline
+ Environmental Data Collection & The system collects data from many sensors throughout a city. The system ensures the incoming data is in the correct format, within bounds, and valid before accepting it. \\ 
+ \hline
+ Data Storage and Management & Sensor data is stored for real-time and historical use, organized by time and stored by city zone. \\ 
+ \hline
+ Data Processing and Aggregation & Data is aggregated over time and by city zone for both private use and public access depending on the sensitivity of the data.  \\ 
+ \hline
+ Alert Detection and Management & Administrators can manage and add new alert rules. Alerts occur when real time data triggers the rule of an alert. Alerts are logged and notifications are sent to the dashboard \\ 
+ \hline
+ Dashboard for City Operators & The dashboard is a secure interface for city operators to view real time data, current alerts, and view trends.  \\ 
+ \hline
+ Public Data Access Interface & A read-only public interface is exposed which only allows access to aggregated, non-sensitive environmental data. \\ 
+ \hline
+ RBAC Management & The system supports Role-Based Access Control to differentiate administrators from city operators.  \\ 
+ \hline
+ Authentication & All user sign-ins are authenticated and all data in transit is encrypted. All significant events, such as alert triggers and administrative changes, are logged by the system.  \\ 
+ \hline
+\end{tabular}
+\end{center}
 % End SubSection
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.75\linewidth]{A04_State.png}
+    \caption{SCEMAS State Diagram}
+    \label{fig:state_diagram}
+\end{figure}
 
 \subsection{User Characteristics}
 \label{sub:user_characteristics}
 % Begin SubSection
-\begin{itemize}
-	\item Describe those general characteristics of the intended users of the product including educational level, experience, and technical expertise 
-	\item Since there will be many users, you may wish to divide into different user types or personas
-%	\item Do not state specific requirements, but rather provide the reasons why certain specific requirements are later specified
-\end{itemize}
+As the app will have different interfaces for different types of users, it is important for us 
+to define the distinct needs and abilities of each category of user.\\\\
+\textbf{City Operators}\\
+City operators will be responsible for monitoring the application's dashboard to put out alerts for events.
+
+\begin{enumerate}
+	\item \textbf{Educational level:} Secondary school education
+		\begin{itemize}
+			\item City operators are expected to have at least a high-school level of education to properly interpret the data on the dashboard.
+		\end{itemize}
+	\item \textbf{Experience:} Prior training in using the system
+		\begin{itemize}
+			\item City operators are expected to be trained in how to use the dashboard prior to starting their role. Prior experience in using a similar dashboard would also be acceptable experience.
+		\end{itemize}
+	\item \textbf{Technical experience:} Average computer knowledge
+		\begin{itemize}
+			\item City operators are expected to have a medium level of expertise in using computers, including an understanding of file systems and more complex graphical user interfaces.
+		\end{itemize}
+\end{enumerate}
+\textbf{City Residents}\\
+City residents will view city-wide alerts notifications from a different interface than city operators.
+\begin{enumerate}
+	\item \textbf{Educational level:} Basic reading and comprehension ability
+		\begin{itemize}
+			\item City residents fall into a wide range of age and education levels, so in order to best accommodate the target audience, the application should be accessible to those with only a primary school education level. 
+		\end{itemize}
+	\item \textbf{Experience:} None
+		\begin{itemize}
+			\item City residents should be able to learn to use the app without having any prior experience with it, or similar products. 
+		\end{itemize}
+	\item \textbf{Technical experience:} Minimal understanding of computers
+		\begin{itemize}
+			\item City residents are expected to have a minimal understanding of how computers work in order to launch the application, as well as some understanding of common app navigation methods (e.g. basic menus, buttons)
+		\end{itemize}
+\end{enumerate}
+\textbf{Application Administrators}\\
+Administrators will be able to define alert rules for the city operator dashboard.
+\begin{enumerate}
+	\item \textbf{Educational level:} Post-Secondary education
+		\begin{itemize}
+			\item The administrators of the system are expected to have completed a four year program at a university or college relating to city management or administrative systems. 
+		\end{itemize}
+	\item \textbf{Experience:} Prior training in using the system
+		\begin{itemize}
+			\item The application administrators of the system are expected to have prior training in using the system, as well as prior experience in using similar software.
+		\end{itemize}
+	\item \textbf{Technical experience:} Mid-High level of computer knowledge
+		\begin{itemize}
+			\item System admins are expected to have a mid to high understanding of computers, and should have a good understanding of file systems, complex system interfaces, trouble-shooting, and potentially command-line interfacing.
+		\end{itemize}
+\end{enumerate}
+The app should also be accessible to individuals with varying levels of visual, auditory and mobility impairments on all user-facing-interfaces to ensure it is usable for all members of the general population. 
 % End SubSection
 
 \subsection{Constraints}
 \label{sub:constraints}
 % Begin SubSection
+The following are constraints which may limit the developer's options and approach:
 \begin{itemize}
-	\item Provide a general description of any constraints that will limit the developer's options
+	\item[] \textbf{Communication Protocol:} The system must accept and send all environmental telemetry data using the MQTT protocol. This is mandated by the existing IoT infrastructure already deployed in smart city environments. The system cannot use alternative protocols such as HTTP.
+	\item[] \textbf{Regulation Compliance:} The system must comply with all data protection and privacy regulations, such as the PIPEDA in Canada. 
+	\item[] \textbf{Public Data Access:} Only non-sensitive environmental data should be exposed through the public interface. Any sensitive data must be restricted for authorized users. This constraint stems from the privacy-by-design requirement specified in the system design.
+	\item[] \textbf{Budget Constraint:} The system must be developed and deployed with zero monetary budget. All software tools, cloud services, databases, and third-party APIs must utilize free-tier offerings.
+	\item[] \textbf{Fixed Timeline:} The system must be developed within the time allocated. This fixed deadline constrains the scope of features that can be implemented and requires prioritization of core functionality over advanced features.
 \end{itemize}
 % End SubSection
 
 \subsection{Assumptions and Dependencies}
 \label{sub:assumptions_and_dependencies}
 % Begin SubSection
-\begin{itemize}
-	\item List any assumptions you made in interpreting what the software being developed is aiming to achieve
-	\item List any other assumptions you made that, if it fails to hold, could require you to change the requirements
-	%\item List each of the factors that affect the requirements stated in the SRS
-	%\item These factors are not design constraints on the software but are, rather, any changes to them that can affect the requirements in the SRS
-	\begin{itemize}
-		\item \textbf{Example}: An assumption may be that a specific operating system will be available on the hardware designated for the software product. If, in fact, the operating system is not available, the SRS would then have to change accordingly.
-	\end{itemize}
-\end{itemize}
+\begin{enumerate}
+	\item We are a private company being contracted by the city government to create this platform. 
+	\item The project is assumed to be funded by the Government of Canada.
+	\item The system is assumed to be limited to operation within one city.
+	\item It is assumed that there is valid data flowing into the system from various IoT devices for Business Events to be successful (as stated in the Precondition for BE1).
+	\item It is assumed that accompanying training modules will be provided for City Operators, and they can read the system documentation.
+\end{enumerate}
 % End SubSection
 
 \subsection{Apportioning of Requirements}
 \label{sub:apportioning_of_requirements}
 % Begin SubSection
-\begin{itemize}
-	\item Identify requirements that may be delayed until future versions of the system
-\end{itemize}
+N/A
 % End SubSection
 
 % End Section
+
+\newpage
 \section{Use Case Diagram}
 \label{sec:use_case_diagram}
 % Begin Section
-\begin{itemize}
-	\item Provide the use case diagram for the system being developed.
-	\item You do not need to provide the textual description of any of the use cases here (these will be specified under "Highlights of Functional Requirements").
-%	\item Provide \emph{one} use case diagram for the most important Business Event.
-%	\item The text of all use cases will be specified under "Highlights of Functional Requirements"
-\end{itemize}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.75\linewidth]{A04_UseCase.png}
+    \caption{SCEMAS Use-Case Diagram}
+    \label{fig:use_case_diagram}
+\end{figure}
 %In this section, select the most important Business Event that your system responds to and give its use case diagram.  Only one use case diagram is needed.  Give a brief textual description of the use case without repeating what is in the scenarios of the corresponding Business Event.
 
 %
@@ -277,6 +379,7 @@ requirements, maintainability, security, and political requirements.
 %\end{enumerate}
 %% End Section
 
+\newpage
 \section{Highlights of Functional Requirements}
 \label{sec:functional_requirements}
 % Begin Section
