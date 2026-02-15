@@ -382,155 +382,651 @@ N/A
 \newpage
 \section{Highlights of Functional Requirements}
 \label{sec:functional_requirements}
-% Begin Section
+
+The business events identified for the project are as follows: 
+
 \begin{itemize}
-	\item Specify all use cases (or other scenarios triggered by other events), organized by Business Event. 
-	\item For each Business Event, show the scenario from every Viewpoint. You should have the same set of Viewpoints across all Business Events. If a Viewpoint doesn't participate, write N/A so we know you considered it still. You can choose how to present this - keep in mind it should be easy to follow. 
-	\item At the end, combine them all into a Global Scenario.
-	%\item Specify the "use cases" (or other triggering events) organized by Business Event. (The Global Scenario is what you might think of as a use case). Be sure to consider Business Events that aren't just triggered by users with goals (e.g. something happens in the environment that your system needs to respond to)
-	\item Your focus should be on what the system needs to do, not how to do it. Specify it in enough detail that it clearly specifies what needs to be accomplished, but not so detailed that you start programming or making design decisions.
-	\item Keep the length of each use case (Global Scenario) manageable. If it's getting too long, split into sub-cases.
-	\item You are \emph{not} specifying a complete and consistent set of functional requirements here. (i.e. you are providing them in the form of use cases/global scenarios, not a refined list). For the purpose of this project, you do not need to reduce them to a list; the global scenarios format is all you need.
-	\item Red text below is just to highlight where you need to insert a scenario - don't actually write it all in red.
+	\item {\bf BE1.} Creating an Alert Rule
+	\item {\bf BE2.} Editing Existing Alert Rule
+	\item {\bf BE3.} Sunlight is very high on the UV index
+	\item {\bf BE4.} View Dashboard
+	\item {\bf BE5.} Public API Request to Access Data
+	\item {\bf BE6.} Checking Audit log 
+	\item {\bf BE7.} User authentication
 \end{itemize}
 
-\noindent {\bf Main Business Events:} List out all the main business events you are presenting. If you sub-divided into smaller ones, you don't need to include the smaller ones in this list.\\
+\noindent The viewpoints identified for the project include: 
+\begin{itemize}
+	\item {\bf VP1.} Administrator
+	\item {\bf VP2.} City Operator
+	\item {\bf VP3.} Public User
+	\item {\bf VP4.} Human Resources
+	\item {\bf VP5.} Supply Chain
+	\item {\bf VP6.} Legal
+\end{itemize}
 
-\noindent {\bf Viewpoints:} List out all the viewpoints you will be considering.\\
-
-\noindent {\bf Interpretation:} Specify any liberties you took in interpreting business events, if necessary.\\
 
 \begin{enumerate}[{\bf BE1.}]
-	\item Business Event Name \#1
+	\item Creating an Alert Rule
+	\begin{itemize}
+			\item[] {\bf Pre-Condition:} The user is logged in and has a valid account and is knowledgeable with the system. There is valid data flowing into the system from various IoT devices.
+		\end{itemize}
 		\begin{enumerate}[{\bf VP1.}]
-			\item Viewpoint Name \#1 \\
-				\textcolor{red}{Insert Scenario Here}
-			\item Viewpoint Name \#2 \\
-				\textcolor{red}{Insert Scenario Here}
+		\item Administrator
+			\begin{itemize}
+				\item[5i.] The administrator approves the alert. 
+				\item[6i.] Administrator does not approve the alert.
+				\begin{itemize} 
+					\item[6i.1.] Feedback box appears and admin gives feedback on alert.
+					\item[6i.2.] Sends feedback back to operator.
+				\end{itemize}
+				\item[7i.2.] The administrator is contacted by the user about a failed alert setup.
+			\end{itemize}
+		\item City Operator
+			\begin{itemize}
+				\item[] {\bf Main Success Scenario:}
+			\end{itemize}
+			\begin{enumerate}[1.]
+				\item User clicks on create alert tool in the dashboard navbar.
+				\item System displays the alert configuration tool.
+				\item User selects relevant environmental metrics, geographic area, threshold value(s) and timeframe for this alert.
+				\item User selects the alert visibility, public facing vs internal.
+				\item User reviews the summary and sends it to administrator for approval.
+				\item Once approved the system checks if the alert is valid and saves to database.
+				\item System creates the alert and displays a success message on screen.
+			\end{enumerate}
+			\begin{itemize}
+				\item[] {\bf Secondary Scenario:}
+				\item[1i.] User selects the wrong tool. \\
+				\hspace{1cm}1i.1. User selects go back.
+				\item[3i.] User enters invalid metric, or configuration. \\
+				\hspace{1cm}3i.1. System highlights the input box in red. \\
+				\hspace{1cm}3i.2. System prevents user from proceeding.
+				\item[4i.] If a public facing alert has been created the system checks if the alert is permitted within the law.
+				\item[5i.] User cancels the alert configuration. \\
+				\hspace{1cm}5i.1. User clicks cancel alert. \\
+				\hspace{1cm}5i.2. System discards all inputs and returns user to dashboard.
+				\item[6i.] Administrator does not approve the alert. \\
+				\hspace{1cm}6i.1. Feedback box appears and admin gives feedback on alert. \\
+				\hspace{1cm}6i.2. Sends feedback back to operator.
+				\item[7i.] System fails to create alert. \\
+				\hspace{1cm}7i.1. System displays error message on screen. \\
+				\hspace{1cm}7i.2. System provides option to contact the administrator.
+			\end{itemize}
+		\item Public User \\
+			N/A
+		\item Human Resources \\
+			N/A
+		\item Supply Chain \\
+			N/A
+		\item Legal
+			\begin{itemize}
+				\item[4i.] If a public facing alert has been created the system checks if the alert is permitted within the law.
+			\end{itemize}
 		\end{enumerate}
-		{\bf Global Scenario:}\\
-		\textcolor{red}{Insert Scenario Here}
-	\item Business Event Name \#2
-	\begin{enumerate}[{\bf VP1.}]
-		\item Viewpoint Name \#1 \\
-		\textcolor{red}{Insert Scenario Here}
-		\item Viewpoint Name \#2 \\
-		\textcolor{red}{Insert Scenario Here}
-	\end{enumerate}
-	{\bf Global Scenario:}\\
-	\textcolor{red}{Insert Scenario Here}
+		{\bf Global Scenario:}
+		\begin{itemize}
+			\item[] {\bf Precondition:} The user is logged in and has a valid account and is knowledgeable with the system. There is valid data flowing into the system from various IoT devices.
+			\item[] {\bf Main Success Scenario:}
+		\end{itemize}
+		\begin{enumerate}[1.]
+			\item User clicks on create alert tool in the dashboard navbar.
+			\item System displays the alert configuration tool.
+			\item User selects relevant environmental metrics, geographic area, threshold value(s) and timeframe for this alert.
+			\item User selects the alert visibility, public facing vs internal.
+			\item User reviews the summary and sends to administrator for approval.
+			\item Once approved the system checks if the alert is valid and saves to database.
+			\item System creates the alert and display a success message on screen.
+		\end{enumerate}
+		\begin{itemize}
+			\item[] {\bf Secondary Scenario:}
+			\item[1i.] User selects the wrong tool. \\
+			\hspace{1cm}1i.1. User selects go back.
+			\item[3i.] User enters invalid metric, or configuration. \\
+			\hspace{1cm}3i.1. System highlights the input box in red. \\
+			\hspace{1cm}3i.2. System prevents user from proceeding.
+			\item[4i.] If a public facing alert has been created the system checks if the alert is permitted within the law.
+			\item[5i.] User cancels the alert configuration. \\
+			\hspace{1cm}5i.1. User clicks cancel alert. \\
+			\hspace{1cm}5i.2. System discards all inputs and returns user to dashboard.
+			\item[6i.] Administrator does not approve the alert. \\
+			\hspace{1cm}6i.1. Feedback box appears and admin gives feedback on alert. \\
+			\hspace{1cm}6i.2. Sends feedback back to operator.
+			\item[7i.] System fails to create alert. \\
+			\hspace{1cm}7i.1. System displays error message on screen. \\
+			\hspace{1cm}7i.2. System provides option to contact the administrator.
+		\end{itemize}
+	
+
+	\item Modify Existing Alert Rule
+		\begin{itemize}
+			\item[] {\bf Pre-Condition:} At least one alert rule must already exist in the system database. The user must be logged in and is knowledgeable with the system and have a valid account with appropriate privileges.
+		\end{itemize}
+		\begin{enumerate}[{\bf VP1.}]
+		\item Administrator
+			\begin{itemize}
+				\item[6i.] The administrator approves the alert. 
+				\item[7i.] Administrator does not approve the alert.
+				\begin{itemize} 
+					\item[7i.1.] Feedback box appears and admin gives feedback on alert.
+					\item[7i.2.] Sends feedback back to operator.
+				\end{itemize}
+				\item[8i.2.] The administrator is contacted by the user about a failed alert setup.
+			\end{itemize}
+		\item City Operator
+			\begin{itemize}
+				\item[] {\bf Main Success Scenario:}
+			\end{itemize}
+			\begin{enumerate}[1.]
+				\item User selects "Manage Alerts" section.
+				\item System fetches and displays a list of currently active and inactive alert rules.
+				\item User selects an alert rule to modify.
+				\item User edits relevant environmental metrics, geographic area, threshold value(s) and timeframe for chosen alert.
+				\item User chooses whether to keep current visibility or change alert visibility, public facing vs internal.
+				\item User reviews the summary and sends to administrator for approval.
+				\item Once approved the system checks if the alert is valid and saves to database.
+				\item System displays a success message indicating the rule has been updated.
+				\item System logs the changes to Audit log.
+			\end{enumerate}
+			\begin{itemize}
+				\item[] {\bf Secondary Scenario:}
+				\item[1i.] User selects the wrong tool. \\
+				\hspace{1cm}1i.1. User selects go back.
+				\item[3i.] User cannot find the specific alert rule. \\
+				\hspace{1cm}3i.1. User uses the search/filter bar to locate the rule by ID or name.
+				\item[4i.] User enters an invalid metric or configuration. \\
+				\hspace{1cm}4i.1. System highlights the input box in red. \\
+				\hspace{1cm}4i.2. System prevents user from proceeding until the error is corrected.
+				\item[6i.] User cancels the edit. \\
+				\hspace{1cm}6i.1. User clicks "Cancel." \\
+				\hspace{1cm}6i.2. System discards all unsaved modifications and returns the user to the "Manage Alert Rules" list.
+				\item[7i.] Administrator does not approve the alert. \\
+				\hspace{1cm}7i.1. Feedback box appears and admin gives feedback on alert.
+				\item[8i.] System fails to update the Alert. \\
+				\hspace{1cm}8i.1. System displays a "Error" message. \\
+				\hspace{1cm}8i.2. System provides an option to contact the Administrator.
+			\end{itemize}
+		\item Public User \\
+			N/A
+		\item Human Resources \\
+			N/A
+		\item Supply Chain
+			\begin{itemize}
+				\item[9i.] Reviews the audit log to ensure alert modifications align with current city safety protocols.
+			\end{itemize}
+		\item Legal
+			\begin{itemize}
+				\item[5i.] If an alert has been edited to be a public-facing alert, the system checks if the alert is permitted within the law.
+			\end{itemize}
+		\end{enumerate}
+		{\bf Global Scenario:}
+		\begin{itemize}
+			\item[] {\bf Pre-Condition:} At least one alert rule must already exist in the system database. The user must be logged in and is knowledgeable with the system and have a valid account with appropriate privileges.
+			\item[] {\bf Main Success Scenario:}
+		\end{itemize}
+		\begin{enumerate}[1.]
+			\item User selects "Manage Alerts" section.
+			\item System fetches and displays a list of currently active and inactive alert rules.
+			\item User selects an alert rule to modify.
+			\item User edits relevant environmental metrics, geographic area, threshold value(s) and timeframe for chosen alert.
+			\item User chooses whether to keep current visibility or change alert visibility, public facing vs internal.
+			\item User reviews the summary and sends to administrator for approval.
+			\item Once approved the system checks if the alert is valid and saves to database.
+			\item System displays a success message indicating the rule has been updated.
+			\item System logs the changes to Audit log.
+		\end{enumerate}
+		\begin{itemize}
+			\item[] {\bf Secondary Scenario:}
+			\item[1i.] User selects the wrong tool. \\
+			\hspace{1cm}1i.1. User selects go back.
+			\item[3i.] User cannot find the specific alert rule. \\
+			\hspace{1cm}3i.1. User uses the search/filter bar to locate the rule by ID or name.
+			\item[4i.] User enters an invalid metric or configuration. \\
+			\hspace{1cm}4i.1. System highlights the input box in red. \\
+			\hspace{1cm}4i.2. System prevents user from proceeding until the error is corrected.
+			\item[6i.] User cancels the edit. \\
+			\hspace{1cm}6i.1. User clicks "Cancel." \\
+			\hspace{1cm}6i.2. System discards all unsaved modifications and returns the user to the "Manage Alert Rules" list.
+			\item[7i.] Administrator does not approve the alert. \\
+			\hspace{1cm}7i.1. Feedback box appears and admin gives feedback on alert.
+			\item[8i.] System fails to update the Alert. \\
+			\hspace{1cm}8i.1. System displays a "Error" message. \\
+			\hspace{1cm}8i.2. System provides an option to contact the Administrator.
+		\end{itemize}
+
+
+
+	\item Sunlight is very high on the UV index
+		\begin{itemize}
+			\item[] {\bf Pre-Condition:} SCEMAS is operational and is receiving sensor data. An Administrator has defined and activated an alert rule for high UV sunlight.
+		\end{itemize}
+		\begin{enumerate}[{\bf VP1.}]
+		\item Administrator
+			\begin{itemize}
+				\item[] {\bf Main Success Scenario:}
+			\end{itemize}
+			\begin{enumerate}[1.]
+				\item The system detects incoming sensor data that violates an alert rule.
+				\item Alert is automatically generated.
+				\item Alert severity, timestamp, and affected zone are recorded.
+				\item The system notifies city operator dashboards in affected areas.
+				\item An Administrator reviews the triggered alert.
+				\item Administrator verifies that the alert triggered correctly.
+			\end{enumerate}
+			\begin{itemize}
+				\item[] {\bf Secondary Scenario:}
+				\item[2i.] System fails to generate alert. \\
+				\hspace{1cm}2i.1. System logs the failure and notifies administrators.
+				\item[6i.] Administrator finds fault in alert rule configuration. \\
+				\hspace{1cm}6i.2. Administrator modifies the faulty alert configuration.
+			\end{itemize}
+		\item City Operator
+			\begin{itemize}
+				\item[] {\bf Main Success Scenario:}
+			\end{itemize}
+			\begin{enumerate}[1.]
+				\item An alert is triggered and appears on the operator dashboard.
+				\item The operator notices the alert.
+				\item The operator clicks on the notification to view alert details.
+				\item Alert status is updated to be acknowledged by the system.
+				\item The operator and viewing timestamp is logged by the system.
+			\end{enumerate}
+			\begin{itemize}
+				\item[] {\bf Secondary Scenario:}
+				\item[1i.] Multiple alerts appear at once. \\
+				\hspace{1cm}1i.1. Dashboard prioritizes the alert with higher severity. \\
+				\hspace{1cm}1i.2. Continue to 2.
+				\item[2i.] No operator notices the alert within 5 minutes of alert trigger. \\
+				\hspace{1cm}2i.1. The system notifies administrators.
+				\item[4i.] Operator flags alert as false alarm. \\
+				\hspace{1cm}4i.1. System records the report and notifies administrators for review.
+			\end{itemize}
+		\item Public User
+			\begin{itemize}
+				\item[] {\bf Main Success Scenario:}
+			\end{itemize}
+			\begin{enumerate}[1.]
+				\item The alert rule is triggered by the system.
+				\item The system checks that the alert can be shown to the public.
+				\item The alert is found to be publicly visible.
+				\item The alert is set to be visible through the public API.
+				\item A user requests access to the alert.
+				\item The system sends the alert information to the user.
+			\end{enumerate}
+			\begin{itemize}
+				\item[] {\bf Secondary Scenario:}
+				\item[3i.] The alert is not found to be publicly visible. \\
+				\hspace{1cm}3i.1. The alert is not set to be visible through the public API.
+				\item[6i.] The system delays sending information due to rate limiting.
+			\end{itemize}
+		\item Human Resources \\
+			N/A
+		\item Supply Chain \\
+			N/A
+		\item Legal \\
+			N/A
+		\end{enumerate}
+		{\bf Global Scenario:}
+		\begin{itemize}
+			\item[] {\bf Pre-Condition:} SCEMAS is operational and is receiving sensor data. An Administrator has defined and activated an alert rule for high UV sunlight.
+			\item[] {\bf Main Success Scenario:}
+		\end{itemize}
+		\begin{enumerate}[1.]
+			\item The system detects incoming sensor data that violates an alert rule.
+			\item Alert is automatically generated.
+			\item Alert severity, timestamp, and affected zone are recorded.
+			\item The system checks that the alert can be shown to the public.
+			\item The alert is found to be publicly visible.
+			\item The system notifies city operator dashboards in affected areas.
+			\item The alert appears on the operator dashboard.
+			\item A City Operator notices the alert.
+			\item The City Operator clicks on the notification to view alert details.
+			\item Alert status is updated to be acknowledged by the system.
+			\item The acknowledging City Operator and timestamp is logged by the system.
+			\item The alert is set to be visible through the public API.
+			\item A Public User requests access to the alert.
+			\item The system sends the alert information to the Public User.
+			\item An Administrator reviews the triggered alert.
+			\item The Administrator verifies that the alert triggered correctly.
+		\end{enumerate}
+		\begin{itemize}
+			\item[] {\bf Secondary Scenario:}
+			\item[2i.] System fails to generate alert. \\
+			\hspace{1cm}2i.1. System logs the failure and notifies administrators.
+			\item[5i.] The alert is not found to be publicly visible. \\
+			\hspace{1cm}5i.1. The alert is not set to be visible through the public API.
+			\item[7i.] Multiple alerts appear at once. \\
+			\hspace{1cm}7i.1. Dashboard prioritizes the alert with higher severity. \\
+			\hspace{1cm}7i.2. Continue to 8.
+			\item[8i.] No operator notices the alert within 5 minutes of the alert trigger. \\
+			\hspace{1cm}8i.1. The system notifies Administrators.
+			\item[10i.] Operator flags alert as false alarm. \\
+			\hspace{1cm}10i.1. System records the report and notifies administrators for review.
+			\item[14i.] The system delays sending information due to rate limiting.
+			\item[16i.] Administrator finds fault in alert rule configuration. \\
+			\hspace{1cm}16i.2. Administrator modifies the faulty alert configuration.
+		\end{itemize}
+
+
+
+	\item View Dashboard
+		\begin{itemize}
+			\item[] {\bf Pre-Condition:} SCEMAS is online, and the user has logged in with a verified account on SCEMAS with the correct level account permissions.
+		\end{itemize}
+		\begin{enumerate}[{\bf VP1.}]
+		\item Administrator
+			\begin{itemize}
+				\item[] {\bf Main Success Scenario:}
+			\end{itemize}
+			\begin{enumerate}[1.]
+				\item Administrator accesses the SCEMAS application home screen.
+				\item System retrieves the user's last-used geographical area and sets it as the current geographical location.
+				\item System returns currently active nearby environmental and health warnings and displays them in a real-time dashboard map.
+				\item Administrator clicks the toggle bar to select "View Alerts".
+				\item System identifies the user as an Admin and loads all current environmental alerts to the dashboard.
+				\item Administrator monitors active alerts and system logs for consistency.
+				\item Administrator clicks log out.
+				\item System invalidates the session and clears the cache.
+				\item System invalidates the current session, clears cached map data and returns the user to the login screen.
+			\end{enumerate}
+		\item City Operator
+			\begin{itemize}
+				\item[] {\bf Main Success Scenario:}
+			\end{itemize}
+			\begin{enumerate}[1.]
+				\item Operator accesses the SCEMAS application home screen.
+				\item System retrieves the user's last-used geographical area and sets it as the current geographical location.
+				\item System returns nearby currently active nearby environmental and health warnings and displays them in a real-time dashboard map.
+				\item Operator clicks on a warning on the map to view more information.
+				\item System opens a side panel showing all official information, including severity levels, specific metrics, and health precaution recommendations.
+				\item Operator views information and closes the side panel.
+				\item System closes the side panel and returns to the dashboard map.
+				\item Operator selects a data type (air quality, noise levels, temperature, and humidity) from the metric toggle menu.
+				\item System updates the map to display the selected data type on the real-time map with colour-coded environmental maps based on the severity levels of nearby regions.
+				\item Operator clicks log out.
+				\item System invalidates the current session, clears cached map data and returns the user to the login screen.
+			\end{enumerate}
+			\begin{itemize}
+				\item[] {\bf Secondary Scenario:}
+				\item[2i.] System fails to retrieve the user's last-used geographical area. \\
+				\hspace{1cm}2i.1. System attempts to fetch the last-used geographical area and receives a null response from the database. \\
+				\hspace{1cm}2i.2. System retrieves the user's default home location from the user's account information. \\
+				\hspace{1cm}2i.3. System sets the default area as the current location and loads the map. \\
+				\hspace{1cm}2i.4. Operator updates their geographical area by searching on the map.
+				\item[3i.] No Critical Alerts found. \\
+				\hspace{1cm}3i.1. System returns no critical alerts nearby. \\
+				\hspace{1cm}3i.2. System displays a "No Active Critical Alerts" message. \\
+				\hspace{1cm}3i.3. System continues to display the base map and environmental metrics side panel.
+				\item[4i.] Login Timed Out. \\
+				\hspace{1cm}4i.1. System notices over 15 minutes since the last user interaction. \\
+				\hspace{1cm}4i.2. System clears all sensitive environmental data from the screen and clears any unsaved changes. \\
+				\hspace{1cm}4i.3. Redirects the user to the login page.
+				\item[5i.] Critical Service Outage. \\
+				\hspace{1cm}5i.1. System detects that a microservice is down. \\
+				\hspace{1cm}5i.2. System displays a message indicating the metric information is unavailable and not up-to-date. \\
+				\hspace{1cm}5i.3. System continues to serve cached data for other functional metrics.
+			\end{itemize}
+		\item Public User \\
+			N/A
+		\item Human Resources \\
+			N/A
+		\item Supply Chain \\
+			N/A
+		\item Legal \\
+			N/A
+		\end{enumerate}
+		{\bf Global Scenario:}
+		\begin{itemize}
+			\item[] {\bf Pre-Condition:} SCEMAS is online, and the user has logged in with a verified account on SCEMAS with the correct level account permissions.
+			\item[] {\bf Main Success Scenario:}
+		\end{itemize}
+		\begin{enumerate}[1.]
+			\item External User accesses the SCEMAS application home screen.
+			\item System retrieves the user's last-used geographical area and sets it as the current geographical location.
+			\item System returns nearby currently active environmental and health warnings and displays them in a real-time dashboard map.
+			\item External User clicks on a warning on the map to view more information.
+			\item System opens a side panel showing all official information, including severity levels, specific metrics, and health precaution recommendations.
+			\item External User views information and closes the side panel.
+			\item System closes the side panel and returns to the dashboard map.
+			\item External User selects a data type (air quality, noise levels, temperature, UV levels, and humidity) from the metric toggle menu.
+			\item System updates the map to display the selected data type on the real-time map with colour-coded environmental maps based on the severity levels of nearby regions.
+			\item External User clicks the toggle bar to select "View Alerts."
+			\item System identifies the user's account permissions and loads all current environmental alerts and system logs to the dashboard.
+			\item External User monitors active alerts and system logs for consistency.
+			\item External User clicks log out.
+			\item System invalidates the current session, clears cached map data, and returns the user to the login screen.
+		\end{enumerate}
+		\begin{itemize}
+			\item[] {\bf Secondary Scenario:}
+			\item[2i.] System fails to retrieve the user's last-used geographical area. \\
+			\hspace{1cm}2i.1. System attempts to fetch the last-used geographical area and receives a null response from the database. \\
+			\hspace{1cm}2i.2. System retrieves the user's default home location from the user's account information. \\
+			\hspace{1cm}2i.3. System sets the default area as the current location and loads the map. \\
+			\hspace{1cm}2i.4. External User updates their geographical area by searching on the map.
+			\item[3i.] No Critical Alerts Found. \\
+			\hspace{1cm}3i.1. System returns no critical alerts nearby. \\
+			\hspace{1cm}3i.2. System displays a "No Active Critical Alerts" message. \\
+			\hspace{1cm}3i.3. System continues to display the base map and environmental metrics side panel.
+			\item[4i.] Login Timed Out. \\
+			\hspace{1cm}4i.1. System notices over 15 mins since the last user interaction. \\
+			\hspace{1cm}4i.2. System clears all sensitive environmental data from the screen and clears any unsaved changes. \\
+			\hspace{1cm}4i.3. System redirects the user to the login page.
+			\item[5i.] Critical Service Outage. \\
+			\hspace{1cm}5i.1. System detects that a microservice is down. \\
+			\hspace{1cm}5i.2. System displays a message indicating the metric information is unavailable and not up-to-date. \\
+			\hspace{1cm}5i.3. System continues to serve cached data for other functional metrics.
+		\end{itemize}
+
+
+	\item Public API Request to Access Data
+		\begin{itemize}
+			\item[] {\bf Pre-Condition:} The public user has read the API documentation. There is valid data flowing from the app to the API.
+		\end{itemize}
+		\begin{enumerate}[{\bf VP1.}]
+		\item Administrator
+			\begin{itemize}
+				\item[] {\bf Secondary Scenario:}
+				\item[3i.] Administrator can manually block an IP address. \\
+				\hspace{1cm}3i.1. Admin can view past metrics from an IP address from the API request database to access if an IP needs to be blocked. \\
+				\hspace{1cm}3i.2. Admin can block an IP address by blacklisting it.
+			\end{itemize}
+		\item City Operator \\
+			N/A
+		\item Public User
+			\begin{itemize}
+				\item[] {\bf Pre-Condition:} SCEMAS is online, the API portal is configured by the administrator and valid aggregated data is in the system.
+				\item[] {\bf Main Success Scenario:}
+			\end{itemize}
+			\begin{enumerate}[1.]
+				\item External user sends a HTTP request to the endpoint for environmental data.
+				\item System receives HTTP request, and processes it by checking if the request is asking for valid data.
+				\item System checks rate limiting counter from requesting IP address and the API request is counted in the database for metrics.
+				\item System retrieves data requested from the database.
+				\item System appends legal disclaimer to request.
+				\item Systems sends HTTP response back to user.
+				\item External user receives data.
+			\end{enumerate}
+			\begin{itemize}
+				\item[] {\bf Secondary Scenario:}
+				\item[2i.] HTTP request is not valid. \\
+				\hspace{1cm}2i.1. System disregards HTTP request. \\
+				\hspace{1cm}2i.2. System responds with not found HTTP response.
+				\item[3i.] Rate limit exceeded. \\
+				\hspace{1cm}3i.1. System drops the request and does not process it. \\
+				\hspace{1cm}3i.2. System returns too many request HTTP response back to user.
+			\end{itemize}
+		\item Human Resources \\
+			N/A
+		\item Supply Chain \\
+			N/A
+		\item Legal
+			\begin{itemize}
+				\item[] {\bf Secondary Scenario:}
+				\item[5i.] Disclaimer is provided in the HTTP response to protect the system and city from liability.
+			\end{itemize}
+		\end{enumerate}
+		{\bf Global Scenario:}
+		\begin{itemize}
+			\item[] {\bf Pre-Condition:} SCEMAS is online and the API portal is configured by admin. Valid aggregated data is in the system.
+			\item[] {\bf Main Success Scenario:}
+		\end{itemize}
+		\begin{enumerate}[1.]
+			\item External user sends a HTTP request to the endpoint for environmental data.
+			\item System receives HTTP request, and processes it by checking if the request is asking for valid data.
+			\item System checks rate limiting counter from requesting IP address and the API request is counted in the database for metrics.
+			\item System retrieves data requested from the database.
+			\item System appends legal disclaimer to request.
+			\item Systems sends HTTP response back to user.
+			\item External user receives data.
+		\end{enumerate}
+		\begin{itemize}
+			\item[] {\bf Secondary Scenario:}
+			\item[2i.] Http request is not valid. \\
+			\hspace{1cm}2i.1. System disregards HTTP request. \\
+			\hspace{1cm}2i.2. System responds with not found HTTP response.
+			\item[3i.] Rate limit exceeded. \\
+			\hspace{1cm}3i.1. System drops the request and does not process it. \\
+			\hspace{1cm}3i.2. System returns too many HTTP requests response back to user.
+		\end{itemize}
+
+	\item Checking Audit log
+		\begin{itemize}
+			\item[] {\bf Pre-Condition:} SCEMAS system is online and actively logging activity in the audit log, Administrator has logged into the system.
+		\end{itemize}
+		\begin{enumerate}[{\bf VP1.}]
+		\item Administrator
+			\begin{itemize}
+				\item[] {\bf Main Success Scenario:}
+			\end{itemize}
+			\begin{enumerate}[1.]
+				\item Administrator clicks on the "Audit Log" button.
+				\item System re-verifies Administrator's permissions and grants them access to the audit logs.
+				\item System displays the audit log page.
+				\item Administrator clicks on the event tab they want to view records of (e.g. user management, alert triggers, device lifecycle changes).
+				\item System retrieves relevant audit logs and displays them on the page.
+				\item Administrator views audit logs of the specified event they were interested in.
+			\end{enumerate}
+			\begin{itemize}
+				\item[] {\bf Secondary Scenario:}
+				\item[2i.] System denies user access to admin controls. \\
+				\hspace{1cm}2i.1. Administrator authentication is unsuccessful. \\
+				\hspace{1cm}2i.2. Checking audit log fails.
+				\item[5i.] No audit logs are present for the type of event being viewed. \\
+				\hspace{1cm}5i.1. System presents a message indicating there are no audit logs for the given event type.
+				\item[5ii.] System fails to retrieve audit logs. \\
+				\hspace{1cm}5ii.1. System presents an error message to notify user of failure. \\
+				\hspace{1cm}5ii.2. Checking audit log fails.
+			\end{itemize}
+		\item City Operator
+			\begin{itemize}
+				\item[] {\bf Secondary Scenario:}
+				\item[5i.] City operator's activity will appear within audit logs retrieved by administrator.
+			\end{itemize}
+		\item Public User \\
+			N/A
+		\item Human Resources
+			\begin{itemize}
+				\item[] {\bf Secondary Scenario:}
+				\item[6i.] Audit logs may be used to flag suspicious or inappropriate activities of city operators for reporting to HR.
+			\end{itemize}
+		\item Supply Chain
+			\begin{itemize}
+				\item[] {\bf Secondary Scenario:}
+				\item[6i.] Audit logs may be passed on to the supply chain to monitor the health of the system.
+			\end{itemize}
+		\item Legal
+			\begin{itemize}
+				\item[] {\bf Secondary Scenario:}
+				\item[6i.] Audit logs may be passed on to the legal department as documented evidence of all the system's activity if required.
+			\end{itemize}
+		\end{enumerate}
+		{\bf Global Scenario:}
+		\begin{itemize}
+			\item[] {\bf Pre-Condition:} SCEMAS system is online and actively logging activity in the audit log, Administrator has logged into the system.
+			\item[] {\bf Main Success Scenario:}
+		\end{itemize}
+		\begin{enumerate}[1.]
+			\item Administrator clicks on the "Audit Log" button.
+			\item System re-verifies Administrator's permissions and grants them access to the audit logs.
+			\item System displays the audit log page.
+			\item Administrator clicks on the event tab they want to view records of (e.g. user management, alert triggers, device lifecycle changes).
+			\item System retrieves relevant audit logs and displays them on the page.
+			\item Administrator views audit logs of the specified event they were interested in.
+		\end{enumerate}
+		\begin{itemize}
+			\item[] {\bf Secondary Scenario:}
+			\item[2i.] System denies user access to admin controls. \\
+			\hspace{1cm}2i.1. Administrator authentication is unsuccessful. \\
+			\hspace{1cm}2i.2. Checking audit log fails.
+			\item[5i.] No audit logs are present for the type of event being viewed. \\
+			\hspace{1cm}5i.1. System presents a message indicating there are no audit logs for the given event type.
+			\item[5ii.] System fails to retrieve audit logs. \\
+			\hspace{1cm}5ii.1. System presents an error message to notify user of failure. \\
+			\hspace{1cm}5ii.2 Checking audit log fails.
+		\end{itemize}
+
+	\item User authentication
+		\begin{itemize}
+			\item[] {\bf Pre-Condition:} The user is knowledgeable with the system. There is valid data flowing into the system from various IoT devices.
+		\end{itemize}
+		\begin{enumerate}[{\bf VP1.}]
+		\item Administrator
+			\begin{itemize}
+				\item[4i.2.] The administrator is prompted to review suspicious login.
+				\item[4i.3.] The administrator is contacted by the user to help with the login issue.
+			\end{itemize}
+		\item City Operator
+			\begin{itemize}
+				\item[] {\bf Main Success Scenario:}
+			\end{itemize}
+			\begin{enumerate}[1.]
+				\item User opens up the SCEMAS webapp in their browser.
+				\item System requires the user to log in and displays the username and password fields.
+				\item User enters username and password.
+				\item System authenticates the user.
+				\item System loads the dashboard and displays all options.
+			\end{enumerate}
+			\begin{itemize}
+				\item[] {\bf Secondary Scenario:}
+				\item[4i.] System fails to authenticate the user. \\
+				\hspace{1cm}4i.1. System displays login error on screen. \\
+				\hspace{1cm}4i.2. System prompts the administrator to review suspicious log in. \\
+				\hspace{1cm}4i.3. System asks if the user wants to contact the administrator for help.
+			\end{itemize}
+		\item Public User \\
+			N/A
+		\item Human Resources \\
+			N/A
+		\item Supply Chain \\
+			N/A
+		\item Legal
+			\begin{itemize}
+				\item[11i.] If a public facing alert has been created the system checks if the alert is permitted within the law.
+			\end{itemize}
+		\end{enumerate}
+		{\bf Global Scenario:}
+		\begin{itemize}
+			\item[] {\bf Pre-Condition:} The user is knowledgeable with the system. There is valid data flowing into the system from various IoT devices.
+			\item[] {\bf Main Success Scenario:}
+		\end{itemize}
+		\begin{enumerate}[1.]
+			\item User opens up the SCEMAS webapp in their browser.
+			\item System requires the user to log in and displays the username and password fields.
+			\item User enters username and password.
+			\item System authenticates the user.
+			\item System loads the dashboard and displays all options.
+		\end{enumerate}
+		\begin{itemize}
+			\item[] {\bf Secondary Scenario:}
+			\item[4i.] System fails to authenticate the user. \\
+			\hspace{1cm}4i.1. System displays login error on screen. \\
+			\hspace{1cm}4i.2. System prompts the administrator to review suspicious login. \\
+			\hspace{1cm}4i.3. System asks if the user wants to contact the administrator for help.
+		\end{itemize}
 \end{enumerate}
 
-%	Below, we organize by Business Event.
-%	\begin{enumerate}[{BE}1.]
-%		\item Business Event name
-%		\begin{enumerate}[{VP1}.1]
-%			\item Viewpoint name \newline
-%			\noindent\fbox{%
-%				\parbox{0.5\textwidth}{%
-%					\begin{itemize}
-%						\item {\bf $S_{1}$:} Initial response of the system to the Business Event
-%						\item {\bf $E_{1}$:}  Reaction of the environment to $S_{1}$
-%						\item {\bf $S_{2}$:}  Response of the system to $E_{1}$
-%						\item {\bf $E_{2}$:}  Reaction of the environment to $S_{2}$
-%						\item[] $\cdots$
-%						\item {\bf $S_{n}$:}  Response of the system to $E_{(n-1)}$
-%						\item {\bf $E_{n}$:}  Reaction of the environment to $E_{(n-1)}$
-%						\item {\bf $S_{(n+1)}$:} Final response of the system concluding its function regarding the Business Event
-%					\end{itemize}
-%				}%
-%			}
-%			\item Viewpoint name\newline
-%			\noindent\fbox{%
-%				\parbox{0.5\textwidth}{%
-%					\begin{itemize}
-%						\item {\bf $S_{1}$:} Initial response of the system to the Business Event
-%						\item {\bf $E_{1}$:}  Reaction of the environment to $S_{1}$
-%						\item {\bf $S_{2}$:}  Response of the system to $E_{1}$
-%						\item {\bf $E_{2}$:}  Reaction of the environment to $S_{2}$
-%						\item[] $\cdots$
-%						\item {\bf $S_{k}$:}  Response of the system to $E_{(k-1)}$
-%						\item {\bf $E_{k}$:}  Reaction of the environment to $E_{(k-1)}$
-%						\item {\bf $S_{(k+1)}$:} Final response of the system concluding its function regarding the Business Event
-%					\end{itemize}
-%				}%
-%			}
-%			\item \dots
-%			\item \dots
-%			\item \dots
-%			\item[\dots]
-%		\end{enumerate}	
-%		\item[] {\bf Global Scenario of {\it Business Event Name}:} It is the scenario corresponding to the integration of all the above scenarios from the different Viewpoints of the Business Event BE1.\newline
-%		\noindent\fbox{%
-%			\parbox{0.5\textwidth}{%
-%				\begin{itemize}
-%					\item {\bf $S_{1}$:} Initial response of the system to the Business Event
-%					\item {\bf $E_{1}$:}  Reaction of the environment to $S_{1}$
-%					\item {\bf $S_{2}$:}  Response of the system to $E_{1}$
-%					\item {\bf $E_{2}$:}  Reaction of the environment to $S_{2}$
-%					\item[] $\cdots$
-%					\item {\bf $S_{m}$:}  Response of the system to $E_{(m-1)}$
-%					\item {\bf $E_{m}$:}  Reaction of the environment to $E_{(m-1)}$
-%					\item {\bf $S_{(m+1)}$:} Final response of the system concluding its function regarding the Business Event
-%				\end{itemize}
-%			}%
-%		}	
-%		%\end{enumerate}
-%		\item Business Event name
-%		\begin{enumerate}[{VP1}.1]
-%			\item Viewpoint name \newline
-%			\noindent\fbox{%
-%				\parbox{0.5\textwidth}{%
-%					\begin{itemize}
-%						\item {\bf $S_{1}$:} Initial response of the system to the Business Event
-%						\item {\bf $E_{1}$:}  Reaction of the environment to $S_{1}$
-%						\item {\bf $S_{2}$:}  Response of the system to $E_{1}$
-%						\item {\bf $E_{2}$:}  Reaction of the environment to $S_{2}$
-%						\item[] $\cdots$
-%						\item {\bf $S_{n'}$:}  Response of the system to $E_{(n'-1)}$
-%						\item {\bf $E_{n'}$:}  Reaction of the environment to $E_{(n'-1)}$
-%						\item {\bf $S_{(n'+1)}$:} Final response of the system concluding its function regarding the Business Event
-%					\end{itemize}
-%				}%
-%			}
-%			\item Viewpoint name\newline
-%			\noindent\fbox{%
-%				\parbox{0.5\textwidth}{%
-%					\begin{itemize}
-%						\item {\bf $S_{1}$:} Initial response of the system to the Business Event
-%						\item {\bf $E_{1}$:}  Reaction of the environment to $S_{1}$
-%						\item {\bf $S_{2}$:}  Response of the system to $E_{1}$
-%						\item {\bf $E_{2}$:}  Reaction of the environment to $S_{2}$
-%						\item[] $\cdots$
-%						\item {\bf $S_{k'}$:}  Response of the system to $E_{(k'-1)}$
-%						\item {\bf $E_{k'}$:}  Reaction of the environment to $E_{(k'-1)}$
-%						\item {\bf $S_{(k'+1)}$:} Final response of the system concluding its function regarding the Business Event
-%					\end{itemize}
-%				}%
-%			}
-%			\item \dots
-%			\item \dots
-%			\item \dots
-%			\item[\dots]
-%		\end{enumerate}	
-%		\item[] {\bf Global Scenario of {\it Business Event Name}:} It is the scenario corresponding to the integration of all the above scenarios from the different Viewpoints of the Business Event BE2.\newline
-%		\noindent\fbox{%
-%			\parbox{0.5\textwidth}{%
-%				\begin{itemize}
-%					\item {\bf $S_{1}$:} Initial response of the system to the Business Event
-%					\item {\bf $E_{1}$:}  Reaction of the environment to $S_{1}$
-%					\item {\bf $S_{2}$:}  Response of the system to $E_{1}$
-%					\item {\bf $E_{2}$:}  Reaction of the environment to $S_{2}$
-%					\item[] $\cdots$
-%					\item {\bf $S_{m'}$:}  Response of the system to $E_{(m'-1)}$
-%					\item {\bf $E_{m'}$:}  Reaction of the environment to $E_{(m'-1)}$
-%					\item {\bf $S_{(m'+1)}$:} Final response of the system concluding its function regarding the Business Event
-%				\end{itemize}
-%			}%
-%		}		
-%	\end{enumerate}
 
-%End Section
+
 
 \section{Non-Functional Requirements}
 \label{sec:non-functional_requirements}
