@@ -10,10 +10,18 @@
 \usepackage{fancyhdr}
 \usepackage[margin=1in]{geometry}
 \usepackage{graphicx}
+\PassOptionsToPackage{hyphens}{url}
+\usepackage[hidelinks]{hyperref}
 %\usepackage{extarrows}
 %\usepackage{setspace}
 %\usepackage{xcolor}
 \usepackage{color}
+%------------------------------------------------------------------------------
+
+% Customize hyperref appearance
+%------------------------------------------------------------------------------
+\hypersetup{breaklinks=true}
+\urlstyle{same}
 %------------------------------------------------------------------------------
 
 % Header and Footer
@@ -58,81 +66,113 @@
 \newpage
 \section{Introduction}
 \label{sec:introduction}
-This Software Requirements Specification (SRS) provides an overview of the software requirements for the Smart City Environmental Monitoring \& Alert System (SCEMAS). SCEMAS is a software platform designed to collect, analyze, and present environmental data such as air quality, temperature, humidity, and noise levels to support city-level monitoring and decision-making.
+This Software Requirements Specification (SRS) provides an overview of the software requirements for the Smart City Environmental Monitoring and Alert System (SCEMAS). SCEMAS is a software application designed to collect, analyze, and visualize environmental data such as air quality, temperature, humidity, and noise levels to support city-level monitoring and decision-making.
 
-This document outlines the system’s purpose, scope, describes the characteristics of intended users, and the functional and non-functional requirements that guide the design and development of the system.
-\begin{itemize}
-	\item Provide an overview of the document/SRS.
-\end{itemize}
 
 
 \subsection{Purpose}
 \label{sub:purpose}
 % Begin SubSection
-\begin{itemize}
-	\item Specify the purpose of the SRS.
-	\item Specify the intended audience for the SRS.
-\end{itemize}
+This document outlines the system’s purpose, scope, characteristics of intended users, and the 
+functional and non-functional requirements that guide the design and development of the system.
+\\\\This document is intended for internal SCEMAS stakeholders, including but not limited to project managers, developers, domain experts, and SCEMAS team members/investors. No prior readings are required.
 % End SubSection
 
 \subsection{Scope}
 \label{sub:scope}
 % Begin SubSection
-\begin{itemize}
-	\item Identify the software product(s) to be produced, and name each (e.g., Host DBMS, Report Generator, etc.)
-	\item Explain what the software product(s) will do (and, if necessary, also state what they will not do).
-	\item Describe the application of the software being specified, including relevant benefits, objectives, and goals.
-%	\item Be consistent with similar statements in higher-level specifications (e.g., the system requirements specification), if they exist
-\vspace{10px}
-	\\ 
-	Features: 
-	\begin{itemize}
-		\item Reliable ingestion and processing of sensor telemetry via MQTT protocol, validating each incoming message for correct format, adherence to defined scheme and plausible value ranges. 
-		\item All valid data is presistently stored in a database optimized for time-series data. 
-		\item Preform real-time aggregation calculating meterics within geographical zones. Ex: 5min, 1h avg 
-	\end{itemize}
-	
-\end{itemize}
+Smart City Environmental Monitoring and Alert System (SCEMAS) is an environmental monitoring 
+software system that allows users to quickly and easily monitor environmental data for metrics 
+such as air quality, noise levels, temperature, UV levels, and humidity across geographical 
+zones, as well as configure alerts and reminders.\\\\
+The software products in the system include a dashboard for real-time data visualization of 
+active alerts and geographical maps of sensor locations. Real-time data aggregation will be 
+performed within geographical zones to transform data into actionable insights for time-sensitive 
+alerts in the system. A read-only REST API for non-sensitive data will be publicly available 
+for any user, which uses HTTP methods to ensure safe access and rate limiting to prevent abuse 
+and security threats. The system will use MQTT for transmitting all sensor telemetry securely 
+through encryption, validating incoming messages for correct format, adherence to the defined 
+scheme and validating value ranges. The telemetry stored in a time-series database will not 
+store or process PII. Audit log history of all significant events, alert triggers and user 
+management will be stored for a minimum of 1 year.\\\\
+The system will have role-based access control, which will authorize user-specific access to 
+data based on a user’s predefined role: City Operator and System Administrator. The operators 
+will primarily use the application to monitor environmental conditions, view raised alerts and 
+respond to events quickly using in-app tools. Operators will have write access to change event 
+statuses and create alert rules. Administrators will have elevated privileges to approve and 
+verify any alert rules being made based on specific thresholds or historical data trends.\\\\
+SCEMAS will have a separate public facing dashboard interface that will allow any public user 
+to view the visualized non-sensitive data from the REST API.\\\\
+Our software will have Service Level Agreements (SLA) to guarantee a dashboard response time 
+of 30 seconds upon logging in. A goal of the software is to increase the number of public users 
+accessing the REST API to improve data quality and product development.
 % End SubSection
 
 \subsection{Definitions, Acronyms, and Abbreviations}
 \label{sub:definitions_acronyms_and_abbreviations}
 % Begin SubSection
-\begin{itemize}
-	\item Provide the definitions of all terms, acronyms, and abbreviations required to properly interpret the SRS.
-	\item This should be in alphabetical order.
-\end{itemize}
+SCEMAS: Smart City Environmental Monitoring and Alert System\\
+PIPEDA: Personal Information Protection and Electronic Documents Act. 
+RTO: Recovery Time Objective is the maximum amount of time that it should take to restore system operations after a service disruption.\\
+PII: Personally Identifiable Information\\
+UI: User Interface is the graphical display of the application the users interact with\\
+UX: Refers to the user experience using a given user interface\\
+MQTT: Message Queuing Telemetry Transport\\
+RBAC: Role-Based Access Control\\
+IoT: Internet of Things\\
+UV: Ultraviolet\\
+REST API: Representational State Transfer Application Programming Interface\\
+\#-px: Refers to the pixel size of attributes on a user interface, e.g. 14-px sized font\\
 % End SubSection
 
 \subsection{References}
 \label{sub:references}
 % Begin SubSection
 \begin{itemize}
-	\item [X]. (2026). “Project Outline for Software Design II(SE3A04) Smart City Environmental Monitoring \& Alert System (SCEMAS)” [Online]. Available: https://avenue.cllmcmaster.ca/d2l/le/lessons/727030/topics/5250141 [Accessed: 14-Jan-2026]
-	\item IEEE Style
-	\item Provide a complete list of all documents referenced elsewhere in the SRS.
-	\item Identify each document by title, report number (if applicable), date, and publishing organization.
-	\item Specify the sources from which the references can be obtained.
-	\item Order this list in some sensible manner (alphabetical by author, or something else that makes more sense).
+	\item[] [1]. K. Erik, “The Responsive Website Font Size Guidelines,” Learn UI Design. Accessed: Feb. 01, 2026. [Online]. Available: \url{https://learnui.design/blog/mobile-desktop-website-font-size-guidelines.html}
+	\item[] [2]. Altamira, “Common Screen Sizes for Responsive Web Design.” Accessed: Feb. 01, 2026. [Online]. Available: \url{https://www.altamira.ai/blog/common-screen-sizes-for-responsive-web-design/}
+	\item[] [3]. L. Bruton, “User interface guidelines: 10 essential rules to follow - UX Design Institute.” Accessed: Feb. 01, 2026. [Online]. Available: url{https://www.uxdesigninstitute.com/blog/10-user-interface-guidelines/}
+	\item[] [4]. “Project Outline for Software Design I” [Online]. Available: \url{https://avenue.cllmcmaster.ca/d2l/le/lessons/727030/topics/5498994 [Accessed: 12-Feb-2026]}
+	\item[] [5]. J. Dunn, “Why you need a FAQ page and how to create an effective FAQ template,” KnowledgeBaseBlog ,\url{https://www.knowledgebase.com/blog/why-you-need-a-faq-page-and-how-to-create-an-effective-faq-template/} (accessed Feb. 3, 2026).
+	\item[] [6]. M. Hertzem, “Understanding preference: A meta-analysis of user studies”, \url{https://doi.org/10.1016/j.ijhcs.2024.103408} (accessed Feb. 3, 2026).
+	\item[] [7]. ILAC, “English proficiency levels: How to determine your level,” \url{https://ilac.com/blog/how-to-determine-english-levels/} (accessed Feb. 3, 2026).
+	\item[] [8]. E. Magner, “Digital Signage Font Guide: Chapter 2: Font colors,” RSS, \url{https://www.mvix.com/blog/digital-signage-font-guide-font-colors} (accessed Feb. 3, 2026).
+	\item[] [9]. Web.dev (Google), "Why Speed Matters for Your Website and Its Users," 2024. [Online]. Available: \url{https://web.dev/articles/why-speed-matters}. [Accessed: Jan. 31, 2026].
+	\item[] [10]. Bodytrak, "The Role of Geolocation Technology in Enhancing Emergency Responses for Worker Safety," May 2024. [Online]. Available: \url{https://bodytrak.co/news/worker-safety-geolocation-technology-emergency-responses/}. [Accessed: Jan. 31, 2026].
+	\item[] [11]. UptimeRobot, "What Does 99.9\% Uptime Mean?," June 2024. [Online]. Available: \url{https://uptimerobot.com/blog/what-does-999-uptime-mean/}. [Accessed: Jan. 31, 2026].
+	\item[] [12]. IBM, "What is Disaster Recovery?" 2024. [Online]. Available: \url{https://www.ibm.com/topics/disaster-recovery}. [Accessed: Feb. 2, 2026].
+	\item[] [13]. Microsoft, "Understand the offline capabilities of IoT Edge devices and gateways," 2024. [Online]. Available: \url{https://learn.microsoft.com/en-us/azure/iot-edge/offline-capabilities}. [Accessed: Feb. 2, 2026].
+	\item[] [14]. GeeksforGeeks, “Graceful Degradation in Distributed Systems,” 2025. [Online]. Available: \url{https://www.geeksforgeeks.org/system-design/graceful-degradation-in-distributed-systems/}. [Accessed: Feb. 3, 2026].
+	\item[] [15]. Netdata, "What is Database Concurrency?" 2024. [Online]. Available: \url{https://www.netdata.cloud/academy/what-is-database-concurrency/}. [Accessed: Feb. 3, 2026].
+	\item[] [16]. StatCounter Global Stats, “Desktop Operating System Market Share Worldwide.” Accessed: Feb. 01, 2026. [Online]. Available: \url{https://gs.statcounter.com/os-market-share/desktop/worldwide/}
+	\item[] [17]. P. Solutions, “How to minimize downtime during your control system upgrade,” Process Solutions, Inc., \url{https://processsolutions.com/how-to-minimize-downtime-during-your-control-system-upgrade/} (accessed Feb. 3, 2026).
+	\item[] [18]. K. O’Brien, “What is application monitoring?,” IBM, \url{https://www.ibm.com/think/topics/application-monitoring} (accessed Feb. 3, 2026).
+	\item[] [19]. R. Davydov, “How to build scalable, future-proof custom software,” Built In, \url{https://builtin.com/articles/build-future-proof-software} (accessed Feb. 3, 2026).
+	\item[] [20]. R. S. Sandhu, E. J. Coyne, H. L. Feinstein and C. E. Youman, "Role-based access control models," in Computer, vol. 29, no. 2, pp. 38-47, Feb. 1996, doi: 10.1109/2.485845.
+	\item[] [21]. Canadian Centre for Cyber Security, “Annex 3A: Security control catalogue,” Guidance on the Management of IT Security Risks (ITSG-33). [Online]. Available: \url{https://www.cyber.gc.ca/en/guidance/annex-3a-security-control-catalogue-itsg-33}. [Accessed: Feb. 10, 2026].
+	\item[] [22]. Government of Canada, "Official Languages Act (R.S.C., 1985, c. 31 (4th Supp.))," Justice Laws Website. [Online]. Available: \url{https://laws-lois.justice.gc.ca/eng/acts/o-3.01/}. [Accessed: Jan. 31, 2026].
+	\item[] [23]. Government of Canada, "Criminal Code (R.S.C., 1985, c. C-46), s. 319," Justice Laws Website. [Online]. Available: \url{https://laws-lois.justice.gc.ca/eng/acts/c-46/section-319.html}. [Accessed: Jan. 31, 2026].
+	\item[] [24]. Criminal Code, R.S.C. 1985, c. C-46, s. 372. [Online]. Available: \url{https://laws-lois.justice.gc.ca/eng/acts/c-46/section-372.html}
+	\item[] [25]. Government of Canada, "Criminal Code (R.S.C., 1985, c. C-46), s. 184," Justice Laws Website. [Online]. Available: \url{https://laws-lois.justice.gc.ca/eng/acts/c-46/section-184.html}. [Accessed: Jan. 31, 2026].
+	\item[] [26]. Government of Canada, "Personal Information Protection and Electronic Documents Act (S.C. 2000, c. 5)," Justice Laws Website. [Online]. Available: \url{https://laws-lois.justice.gc.ca/eng/acts/p-8.6/}. [Accessed: Jan. 31, 2026].
+	\item[] [27]. Government of Ontario, "Integrated Accessibility Standards, O. Reg. 191/11," ServiceOntario e-Laws. [Online]. Available: \url{https://www.ontario.ca/laws/regulation/110191}. [Accessed: Jan. 31, 2026]
+	\item[] [28]. Government of Ontario, "Municipal Freedom of Information and Protection of Privacy Act, R.S.O. 1990, c. M.56," ServiceOntario e-Laws. [Online]. Available: \url{https://www.ontario.ca/laws/statute/90m56}. [Accessed: Jan. 31, 2026].
+	\item[] [29]. Government of Canada, "Canadian Environmental Protection Act, 1999 (S.C. 1999, c. 33)," Justice Laws Website. [Online]. Available: \url{https://laws-lois.justice.gc.ca/eng/acts/c-15.31/}. [Accessed: Jan. 31, 2026].
+	\item[] [30]. World Wide Web Consortium, "Web Content Accessibility Guidelines (WCAG) 2.1," W3C Recommendation, June 5, 2018. [Online]. Available: \url{https://www.w3.org/TR/WCAG21/}. [Accessed: Jan. 31, 2026].
 \end{itemize}
 % End SubSection
 
 \subsection{Overview}
 \label{sub:overview}
 % Begin SubSection
-
-Section 2 discusses the overall product description including the product functions, user characteristics, 
-constraints, assumptions, and the perspective of the product relative to exisiting projects. Section 3 contains 
-a use case diagram for the system. Section 4 highlights the functional requirements including the use cases organized by 
-business event, different viewpoints for each event and associated scenarios, and a global scenario for each business event. 
-Section 5 discusses the non-functional requirements including the look and feel requirements, usability and human requirements, 
-performance requirements, operational requirements, maintainability, security, and political requirements. 
-
-\begin{itemize}
-	\item Describe what the remainder of the document/SRS contains.\\
-	(e.g. "Section 2 discusses...Section 3...")
-%	\item Explain how the SRS is organized
-\end{itemize}
+Section 2 discusses the overall product description including the product functions, user 
+characteristics, constraints, assumptions, and the perspective of the product relative to 
+existing projects. Section 3 contains a use case diagram for the system. Section 4 highlights 
+the functional requirements including the use cases organized by business event, different 
+viewpoints for each event and associated scenarios, and a global scenario for each business 
+event. Section 5 discusses the non-functional requirements including the look and feel 
+requirements, usability and human requirements, performance requirements, operational 
+requirements, maintainability, security, and political requirements.
 % End SubSection
 
 % End Section
