@@ -72,7 +72,7 @@
 \newpage
 \section{Introduction}
 \label{sec:introduction}
-This Software Requirements Specification (SRS) provides an overview of the software requirements for the Smart City Environmental Monitoring and Alert System (SCEMAS). SCEMAS is a software application designed to collect, analyze, and visualize environmental data such as air quality, temperature, humidity, and noise levels to support city-level monitoring and decision-making.
+This Software Requirements Specification (SRS) provides an overview of the software requirements for the Smart City Environmental Monitoring and Alert System (\textbf{SCEMAS}). \textbf{SCEMAS} is a software application designed to collect, analyze, and visualize environmental data such as air quality, temperature, humidity, and noise levels to support city-level monitoring and decision-making.
 
 
 
@@ -81,25 +81,25 @@ This Software Requirements Specification (SRS) provides an overview of the softw
 % Begin SubSection
 This document outlines the system’s purpose, scope, characteristics of intended users, and the 
 functional and non-functional requirements that guide the design and development of the system.
-\\\\This document is intended for internal SCEMAS stakeholders, including but not limited to project managers, developers, domain experts, and SCEMAS team members/investors. No prior readings are required.
+\\\\This document is intended for internal \textbf{SCEMAS} stakeholders, including but not limited to project managers, developers, domain experts, and \textbf{SCEMAS} team members/investors. No prior readings are required.
 % End SubSection
 
 \subsection{Scope}
 \label{sub:scope}
 % Begin SubSection
-Smart City Environmental Monitoring and Alert System (SCEMAS) is an environmental monitoring 
+Smart City Environmental Monitoring and Alert System (\textbf{SCEMAS}) is an environmental monitoring 
 software system that allows users to quickly and easily monitor environmental data for metrics 
-such as air quality, noise levels, temperature, UV levels, and humidity across geographical 
+such as air quality, noise levels, temperature, \textbf{UV} levels, and humidity across geographical 
 zones, as well as configure alerts and reminders.\\\\
 The software products in the system include a dashboard for real-time data visualization of 
 active alerts and geographical maps of sensor locations. Real-time data aggregation will be 
 performed within geographical zones to transform data into actionable insights for time-sensitive 
-alerts in the system. A read-only REST API for non-sensitive data will be publicly available 
+alerts in the system. A read-only \textbf{REST API} for non-sensitive data will be publicly available 
 for any user, which uses HTTP methods to ensure safe access and rate limiting to prevent abuse 
-and security threats. The system will use MQTT for transmitting all sensor telemetry securely 
+and security threats. The system will use \textbf{MQTT} for transmitting all sensor telemetry securely 
 through encryption, validating incoming messages for correct format, adherence to the defined 
 scheme and validating value ranges. The telemetry stored in a time-series database will not 
-store or process PII. Audit log history of all significant events, alert triggers and user 
+store or process \textbf{PII}. Audit log history of all significant events, alert triggers and user 
 management will be stored for a minimum of 1 year.\\\\
 The system will have role-based access control, which will authorize user-specific access to 
 data based on a user’s predefined role: City Operator and System Administrator. The operators 
@@ -107,28 +107,28 @@ will primarily use the application to monitor environmental conditions, view rai
 respond to events quickly using in-app tools. Operators will have write access to change event 
 statuses and create alert rules. Administrators will have elevated privileges to approve and 
 verify any alert rules being made based on specific thresholds or historical data trends.\\\\
-SCEMAS will have a separate public facing dashboard interface that will allow any public user 
-to view the visualized non-sensitive data from the REST API.\\\\
+\textbf{SCEMAS} will have a separate public facing dashboard interface that will allow any public user 
+to view the visualized non-sensitive data from the \textbf{REST API}.\\\\
 Our software will have Service Level Agreements (SLA) to guarantee a dashboard response time 
 of 30 seconds upon logging in. A goal of the software is to increase the number of public users 
-accessing the REST API to improve data quality and product development.
+accessing the \textbf{REST API} to improve data quality and product development.
 % End SubSection
 
 \subsection{Definitions, Acronyms, and Abbreviations}
 \label{sub:definitions_acronyms_and_abbreviations}
 % Begin SubSection
-SCEMAS: Smart City Environmental Monitoring and Alert System\\
-PIPEDA: Personal Information Protection and Electronic Documents Act. 
-RTO: Recovery Time Objective is the maximum amount of time that it should take to restore system operations after a service disruption.\\
-PII: Personally Identifiable Information\\
-UI: User Interface is the graphical display of the application the users interact with\\
-UX: Refers to the user experience using a given user interface\\
-MQTT: Message Queuing Telemetry Transport\\
-RBAC: Role-Based Access Control\\
-IoT: Internet of Things\\
-UV: Ultraviolet\\
-REST API: Representational State Transfer Application Programming Interface\\
-\#-px: Refers to the pixel size of attributes on a user interface, e.g. 14-px sized font\\
+\textbf{SCEMAS}: Smart City Environmental Monitoring and Alert System\\
+\textbf{PIPEDA}: Personal Information Protection and Electronic Documents Act. 
+\textbf{RTO}: Recovery Time Objective is the maximum amount of time that it should take to restore system operations after a service disruption.\\
+\textbf{PII}: Personally Identifiable Information\\
+\textbf{UI}: User Interface is the graphical display of the application the users interact with\\
+\textbf{UX}: Refers to the user experience using a given user interface\\
+\textbf{MQTT}: Message Queuing Telemetry Transport\\
+\textbf{RBAC}: Role-Based Access Control\\
+\textbf{IoT}: Internet of Things\\
+\textbf{UV}: Ultraviolet\\
+\textbf{REST API}: Representational State Transfer Application Programming Interface\\
+\textbf{\#-px}: Refers to the pixel size of attributes on a user interface, e.g. 14-px sized font\\
 % End SubSection
 
 \subsection{References}
@@ -191,10 +191,10 @@ requirements, maintainability, security, and political requirements.
 \subsection{Product Perspective}
 \label{sub:product_perspective}
 % Begin SubSection
-SCEMAS is a smart city monitoring dashboard developed for environmental monitoring of the 
+\textbf{SCEMAS} is a smart city monitoring dashboard developed for environmental monitoring of the 
 average smart city built for a web application. Related products include Siemens MindSphere, 
 AxxonSoft (Safe City) and Cisco Kinetic for Cities, where city-wide data is monitored from 
-various IoT devices based on geographic zones. However SCEMAS differentiates itself by 
+various \textbf{IoT} devices based on geographic zones. However \textbf{SCEMAS} differentiates itself by 
 focusing on unifying all environmental data into one centralized dashboard and database 
 with the ability to respond to events via built-in tools rather than just observing them. 
 The product will facilitate various roles of access, allowing users to be created, edited, 
@@ -202,12 +202,12 @@ and removed, while keeping extensive historical logs of all user actions, alerts
 collected data for auditing similar to the compliance standards found in the related 
 products. Various alerts and reminders can be created based on geographical zones and 
 real-time aggregated data like in AxxonSoft.\\\\
-The product will interact with the larger system of distributed IoT sensors utilizing the 
-MQTT protocol to protect the data and ensure system privacy and security. SCEMAS will act 
+The product will interact with the larger system of distributed \textbf{IoT} sensors utilizing the 
+\textbf{MQTT} protocol to protect the data and ensure system privacy and security. \textbf{SCEMAS} will act 
 as a central ingestion hub, receiving high-volume telemetry streams from sensors to detect 
 threshold violations in real-time. The product will also utilize real-world mapping 
 software such as OpenStreetMap or GoogleMaps to visualize these telemetry streams. Similar 
-to AxxonSoft map view, SCEMAS will overlay live heatmaps and alert markers on the geography, 
+to AxxonSoft map view, \textbf{SCEMAS} will overlay live heatmaps and alert markers on the geography, 
 allowing City Officials to pinpoint the exact location of environmental hazards and acknowledge 
 them directly from the map interface.\\\\
 The product will have a sub-system to export data for public use, using a secure getaway 
@@ -219,7 +219,7 @@ capabilities of public facing data.
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.75\linewidth]{A04_System.png}
-    \caption{SCEMAS System Diagram}
+    \caption{\textbf{SCEMAS} System Diagram}
     \label{fig:system_diagram}
 \end{figure}
 % End SubSection
@@ -253,7 +253,7 @@ functionality to authenticate users and limit the access of different users base
  \hline
  Public Data Access Interface & A read-only public interface is exposed which only allows access to aggregated, non-sensitive environmental data. \\ 
  \hline
- RBAC Management & The system supports Role-Based Access Control to differentiate administrators from city operators.  \\ 
+ \textbf{RBAC} Management & The system supports Role-Based Access Control to differentiate administrators from city operators.  \\ 
  \hline
  Authentication & All user sign-ins are authenticated and all data in transit is encrypted. All significant events, such as alert triggers and administrative changes, are logged by the system.  \\ 
  \hline
@@ -264,7 +264,7 @@ functionality to authenticate users and limit the access of different users base
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.75\linewidth]{A04_State.png}
-    \caption{SCEMAS State Diagram}
+    \caption{\textbf{SCEMAS} State Diagram}
     \label{fig:state_diagram}
 \end{figure}
 
@@ -330,8 +330,8 @@ The app should also be accessible to individuals with varying levels of visual, 
 % Begin SubSection
 The following are constraints which may limit the developer's options and approach:
 \begin{itemize}
-	\item[] \textbf{Communication Protocol:} The system must accept and send all environmental telemetry data using the MQTT protocol. This is mandated by the existing IoT infrastructure already deployed in smart city environments. The system cannot use alternative protocols such as HTTP.
-	\item[] \textbf{Regulation Compliance:} The system must comply with all data protection and privacy regulations, such as the PIPEDA in Canada. 
+	\item[] \textbf{Communication Protocol:} The system must accept and send all environmental telemetry data using the \textbf{MQTT} protocol. This is mandated by the existing \textbf{IoT} infrastructure already deployed in smart city environments. The system cannot use alternative protocols such as HTTP.
+	\item[] \textbf{Regulation Compliance:} The system must comply with all data protection and privacy regulations, such as the \textbf{PIPEDA} in Canada. 
 	\item[] \textbf{Public Data Access:} Only non-sensitive environmental data should be exposed through the public interface. Any sensitive data must be restricted for authorized users. This constraint stems from the privacy-by-design requirement specified in the system design.
 	\item[] \textbf{Budget Constraint:} The system must be developed and deployed with zero monetary budget. All software tools, cloud services, databases, and third-party APIs must utilize free-tier offerings.
 	\item[] \textbf{Fixed Timeline:} The system must be developed within the time allocated. This fixed deadline constrains the scope of features that can be implemented and requires prioritization of core functionality over advanced features.
@@ -345,7 +345,7 @@ The following are constraints which may limit the developer's options and approa
 	\item We are a private company being contracted by the city government to create this platform. 
 	\item The project is assumed to be funded by the Government of Canada.
 	\item The system is assumed to be limited to operation within one city.
-	\item It is assumed that there is valid data flowing into the system from various IoT devices for Business Events to be successful (as stated in the Precondition for BE1).
+	\item It is assumed that there is valid data flowing into the system from various \textbf{IoT} devices for Business Events to be successful (as stated in the Precondition for BE1).
 	\item It is assumed that accompanying training modules will be provided for City Operators, and they can read the system documentation.
 \end{enumerate}
 % End SubSection
@@ -365,9 +365,11 @@ N/A
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.75\linewidth]{A04_UseCase.png}
-    \caption{SCEMAS Use-Case Diagram}
+    \caption{\textbf{SCEMAS} Use-Case Diagram}
     \label{fig:use_case_diagram}
 \end{figure}
+
+The \textbf{Sensor Data} in the diagram refers to external environmental data being sent to the system.
 %In this section, select the most important Business Event that your system responds to and give its use case diagram.  Only one use case diagram is needed.  Give a brief textual description of the use case without repeating what is in the scenarios of the corresponding Business Event.
 
 %
@@ -388,7 +390,7 @@ The business events identified for the project are as follows:
 \begin{itemize}
 	\item {\bf BE1.} Creating an Alert Rule
 	\item {\bf BE2.} Editing Existing Alert Rule
-	\item {\bf BE3.} Sunlight is very high on the UV index
+	\item {\bf BE3.} Sunlight is very high on the \textbf{UV} index
 	\item {\bf BE4.} View Dashboard
 	\item {\bf BE5.} Public API Request to Access Data
 	\item {\bf BE6.} Checking Audit log 
@@ -409,7 +411,7 @@ The business events identified for the project are as follows:
 \begin{enumerate}[{\bf BE1.}]
 	\item Creating an Alert Rule
 	\begin{itemize}
-			\item[] {\bf Pre-Condition:} The user is logged in and has a valid account and is knowledgeable with the system. There is valid data flowing into the system from various IoT devices.
+			\item[] {\bf Pre-Condition:} The user is logged in and has a valid account and is knowledgeable with the system. There is valid data flowing into the system from various \textbf{IoT} devices.
 		\end{itemize}
 		\begin{enumerate}[{\bf VP1.}]
 		\item Administrator
@@ -466,7 +468,7 @@ The business events identified for the project are as follows:
 		\end{enumerate}
 		{\bf Global Scenario:}
 		\begin{itemize}
-			\item[] {\bf Precondition:} The user is logged in and has a valid account and is knowledgeable with the system. There is valid data flowing into the system from various IoT devices.
+			\item[] {\bf Precondition:} The user is logged in and has a valid account and is knowledgeable with the system. There is valid data flowing into the system from various \textbf{IoT} devices.
 			\item[] {\bf Main Success Scenario:}
 		\end{itemize}
 		\begin{enumerate}[1.]
@@ -596,9 +598,9 @@ The business events identified for the project are as follows:
 
 
 
-	\item Sunlight is very high on the UV index
+	\item Sunlight is very high on the \textbf{UV} index
 		\begin{itemize}
-			\item[] {\bf Pre-Condition:} SCEMAS is operational and is receiving sensor data. An Administrator has defined and activated an alert rule for high UV sunlight.
+			\item[] {\bf Pre-Condition:} \textbf{SCEMAS} is operational and is receiving sensor data. An Administrator has defined and activated an alert rule for high \textbf{UV} sunlight.
 		\end{itemize}
 		\begin{enumerate}[{\bf VP1.}]
 		\item Administrator
@@ -668,7 +670,7 @@ The business events identified for the project are as follows:
 		\end{enumerate}
 		{\bf Global Scenario:}
 		\begin{itemize}
-			\item[] {\bf Pre-Condition:} SCEMAS is operational and is receiving sensor data. An Administrator has defined and activated an alert rule for high UV sunlight.
+			\item[] {\bf Pre-Condition:} \textbf{SCEMAS} is operational and is receiving sensor data. An Administrator has defined and activated an alert rule for high \textbf{UV} sunlight.
 			\item[] {\bf Main Success Scenario:}
 		\end{itemize}
 		\begin{enumerate}[1.]
@@ -711,7 +713,7 @@ The business events identified for the project are as follows:
 
 	\item View Dashboard
 		\begin{itemize}
-			\item[] {\bf Pre-Condition:} SCEMAS is online, and the user has logged in with a verified account on SCEMAS with the correct level account permissions.
+			\item[] {\bf Pre-Condition:} \textbf{SCEMAS} is online, and the user has logged in with a verified account on \textbf{SCEMAS} with the correct level account permissions.
 		\end{itemize}
 		\begin{enumerate}[{\bf VP1.}]
 		\item Administrator
@@ -719,7 +721,7 @@ The business events identified for the project are as follows:
 				\item[] {\bf Main Success Scenario:}
 			\end{itemize}
 			\begin{enumerate}[1.]
-				\item Administrator accesses the SCEMAS application home screen.
+				\item Administrator accesses the \textbf{SCEMAS} application home screen.
 				\item System retrieves the user's last-used geographical area and sets it as the current geographical location.
 				\item System returns currently active nearby environmental and health warnings and displays them in a real-time dashboard map.
 				\item Administrator clicks the toggle bar to select "View Alerts".
@@ -734,7 +736,7 @@ The business events identified for the project are as follows:
 				\item[] {\bf Main Success Scenario:}
 			\end{itemize}
 			\begin{enumerate}[1.]
-				\item Operator accesses the SCEMAS application home screen.
+				\item Operator accesses the \textbf{SCEMAS} application home screen.
 				\item System retrieves the user's last-used geographical area and sets it as the current geographical location.
 				\item System returns nearby currently active nearby environmental and health warnings and displays them in a real-time dashboard map.
 				\item Operator clicks on a warning on the map to view more information.
@@ -777,18 +779,18 @@ The business events identified for the project are as follows:
 		\end{enumerate}
 		{\bf Global Scenario:}
 		\begin{itemize}
-			\item[] {\bf Pre-Condition:} SCEMAS is online, and the user has logged in with a verified account on SCEMAS with the correct level account permissions.
+			\item[] {\bf Pre-Condition:} \textbf{SCEMAS} is online, and the user has logged in with a verified account on \textbf{SCEMAS} with the correct level account permissions.
 			\item[] {\bf Main Success Scenario:}
 		\end{itemize}
 		\begin{enumerate}[1.]
-			\item External User accesses the SCEMAS application home screen.
+			\item External User accesses the \textbf{SCEMAS} application home screen.
 			\item System retrieves the user's last-used geographical area and sets it as the current geographical location.
 			\item System returns nearby currently active environmental and health warnings and displays them in a real-time dashboard map.
 			\item External User clicks on a warning on the map to view more information.
 			\item System opens a side panel showing all official information, including severity levels, specific metrics, and health precaution recommendations.
 			\item External User views information and closes the side panel.
 			\item System closes the side panel and returns to the dashboard map.
-			\item External User selects a data type (air quality, noise levels, temperature, UV levels, and humidity) from the metric toggle menu.
+			\item External User selects a data type (air quality, noise levels, temperature, \textbf{UV} levels, and humidity) from the metric toggle menu.
 			\item System updates the map to display the selected data type on the real-time map with colour-coded environmental maps based on the severity levels of nearby regions.
 			\item External User clicks the toggle bar to select "View Alerts."
 			\item System identifies the user's account permissions and loads all current environmental alerts and system logs to the dashboard.
@@ -834,7 +836,7 @@ The business events identified for the project are as follows:
 			N/A
 		\item Public User
 			\begin{itemize}
-				\item[] {\bf Pre-Condition:} SCEMAS is online, the API portal is configured by the administrator and valid aggregated data is in the system.
+				\item[] {\bf Pre-Condition:} \textbf{SCEMAS} is online, the API portal is configured by the administrator and valid aggregated data is in the system.
 				\item[] {\bf Main Success Scenario:}
 			\end{itemize}
 			\begin{enumerate}[1.]
@@ -867,7 +869,7 @@ The business events identified for the project are as follows:
 		\end{enumerate}
 		{\bf Global Scenario:}
 		\begin{itemize}
-			\item[] {\bf Pre-Condition:} SCEMAS is online and the API portal is configured by admin. Valid aggregated data is in the system.
+			\item[] {\bf Pre-Condition:} \textbf{SCEMAS} is online and the API portal is configured by admin. Valid aggregated data is in the system.
 			\item[] {\bf Main Success Scenario:}
 		\end{itemize}
 		\begin{enumerate}[1.]
@@ -891,7 +893,7 @@ The business events identified for the project are as follows:
 
 	\item Checking Audit log
 		\begin{itemize}
-			\item[] {\bf Pre-Condition:} SCEMAS system is online and actively logging activity in the audit log, Administrator has logged into the system.
+			\item[] {\bf Pre-Condition:} \textbf{SCEMAS} system is online and actively logging activity in the audit log, Administrator has logged into the system.
 		\end{itemize}
 		\begin{enumerate}[{\bf VP1.}]
 		\item Administrator
@@ -942,7 +944,7 @@ The business events identified for the project are as follows:
 		\end{enumerate}
 		{\bf Global Scenario:}
 		\begin{itemize}
-			\item[] {\bf Pre-Condition:} SCEMAS system is online and actively logging activity in the audit log, Administrator has logged into the system.
+			\item[] {\bf Pre-Condition:} \textbf{SCEMAS} system is online and actively logging activity in the audit log, Administrator has logged into the system.
 			\item[] {\bf Main Success Scenario:}
 		\end{itemize}
 		\begin{enumerate}[1.]
@@ -967,7 +969,7 @@ The business events identified for the project are as follows:
 
 	\item User authentication
 		\begin{itemize}
-			\item[] {\bf Pre-Condition:} The user is knowledgeable with the system. There is valid data flowing into the system from various IoT devices.
+			\item[] {\bf Pre-Condition:} The user is knowledgeable with the system. There is valid data flowing into the system from various \textbf{IoT} devices.
 		\end{itemize}
 		\begin{enumerate}[{\bf VP1.}]
 		\item Administrator
@@ -980,7 +982,7 @@ The business events identified for the project are as follows:
 				\item[] {\bf Main Success Scenario:}
 			\end{itemize}
 			\begin{enumerate}[1.]
-				\item User opens up the SCEMAS webapp in their browser.
+				\item User opens up the \textbf{SCEMAS} webapp in their browser.
 				\item System requires the user to log in and displays the username and password fields.
 				\item User enters username and password.
 				\item System authenticates the user.
@@ -1006,11 +1008,11 @@ The business events identified for the project are as follows:
 		\end{enumerate}
 		{\bf Global Scenario:}
 		\begin{itemize}
-			\item[] {\bf Pre-Condition:} The user is knowledgeable with the system. There is valid data flowing into the system from various IoT devices.
+			\item[] {\bf Pre-Condition:} The user is knowledgeable with the system. There is valid data flowing into the system from various \textbf{IoT} devices.
 			\item[] {\bf Main Success Scenario:}
 		\end{itemize}
 		\begin{enumerate}[1.]
-			\item User opens up the SCEMAS webapp in their browser.
+			\item User opens up the \textbf{SCEMAS} webapp in their browser.
 			\item System requires the user to log in and displays the username and password fields.
 			\item User enters username and password.
 			\item System authenticates the user.
@@ -1042,7 +1044,7 @@ The business events identified for the project are as follows:
 \begin{enumerate}[{LF-A}1. ]
 	\item The application should use a distinct colour scheme that is in adherence with the companies brand colours.\newline
 	{\bf Rationale:} The application's UI should be consistent and professional to establish a sense of trust in the product's users [1].
-	\item All text in the application should be at least 14-px in size.\newline
+	\item All text in the application should be at least \textbf{14-px} in size.\newline
 	{\bf Rationale:} The text in the application should follow font-size conventions to be large enough so it is easy to read for a wide range of individuals with varying vision levels [1].
 	\item The background colours of pages should contrast with the interactive elements (alert notifications, buttons, icons) directly on top of them.\newline
 	{\bf Rationale:} The interactive elements on the page should stand out from the background elements in order to indicate what can be interacted with on the page [1].
@@ -1056,8 +1058,8 @@ The business events identified for the project are as follows:
 \begin{enumerate}[{LF-S}1. ]
 	\item The application's interface should be built for a resolution of 1920x1080 and be compatible with various screen sizes across desktop devices.\newline
 	{\bf Rationale:} As the interface will be used across many different desktop devices with varying screen sizes, the interface's size must be adaptable so all users can view the application as intended. 1920x1080 has been selected as the default size as it is the most common resolution on modern desktop devices [2].
-	\item The application's interface must utilize modern conventions of professional software UI/UX to achieve a professional and minimalist design.\newline
-	{\bf Rationale:} Adhering to commonly used UI/UX design principles will make the application look polished and professional, instilling trust in the user. Using well-known conventions of web design will also help the application to be more user-friendly [3].
+	\item The application's interface must utilize modern conventions of professional software \textbf{UI/UX} to achieve a professional and minimalist design.\newline
+	{\bf Rationale:} Adhering to commonly used \textbf{UI/UX} design principles will make the application look polished and professional, instilling trust in the user. Using well-known conventions of web design will also help the application to be more user-friendly [3].
 	\item All main pages of the application interface should be accessible from one menu (e.g. a navigation bar).\newline
 	{\bf Rationale:} The application should be simple to navigate, and users should not have to search through many menus to find crucial features [4].
 \end{enumerate}
@@ -1092,7 +1094,7 @@ The business events identified for the project are as follows:
 % Begin SubSubSection
 \begin{enumerate}[{UH-L}1. ]
 	\item The system must allow any third-party developer to successfully request and interpret environmental data within a two-hour time frame.\newline
-	{\bf Rationale:} A short learning curve ensures the API is intuitive and well-documented for the public. A short onboarding period encourages adoption of the REST API and improves developer productivity [4].
+	{\bf Rationale:} A short learning curve ensures the API is intuitive and well-documented for the public. A short onboarding period encourages adoption of the \textbf{REST API} and improves developer productivity [4].
 \end{enumerate}
 % End SubSubSection
 
@@ -1159,7 +1161,7 @@ The business events identified for the project are as follows:
 	\item The system shall maintain an availability of 99.99\%, limiting the system updates and maintenance to no more than an hour a year.\newline
 	{\bf Rationale:} As the system is responsible for detecting hazards, it must be readily available. Despite the industry standard being an uptime of 99.99\% [11], it is not attainable even for most services. Most cloud service providers' setups could achieve 99.99\% availability [11].
 	\item If the system or database experiences an unplanned failure, it shall automatically recover and restore core services within 120 seconds, without manual intervention.\newline
-	{\bf Rationale:} Disaster recovery aims to minimize business disruption by restoring service quickly after failures. This requirement sets an explicit RTO to reduce the operational "blind spot" during time-sensitive environmental incidents [12].
+	{\bf Rationale:} Disaster recovery aims to minimize business disruption by restoring service quickly after failures. This requirement sets an explicit \textbf{RTO} to reduce the operational "blind spot" during time-sensitive environmental incidents [12].
 \end{enumerate}
 % End SubSubSection
 
@@ -1168,7 +1170,7 @@ The business events identified for the project are as follows:
 % Begin SubSubSection
 \begin{enumerate}[{PR-RFT}1. ]
 	\item The system shall store all incoming sensor data in a local cache for up to 48 hours during a network or internet failure. Upon reconnection, the system shall automatically upload this data to the main database in chronological order.\newline
-	{\bf Rationale:} Smart-city sensor networks must tolerate intermittent connectivity, including extended outages during major emergencies. IoT architectures commonly support offline operation by using local caching so telemetry is not lost and can be reliably forwarded when connectivity returns [13].
+	{\bf Rationale:} Smart-city sensor networks must tolerate intermittent connectivity, including extended outages during major emergencies. \textbf{IoT} architectures commonly support offline operation by using local caching so telemetry is not lost and can be reliably forwarded when connectivity returns [13].
 	\item The system shall continue to provide core functions, even if non-critical subsystems become unavailable.\newline
 	{\bf Rationale:} If one part of the app breaks, the whole system should not crash. Using "graceful degradation" ensures that essential tools remain available [14].
 \end{enumerate}
@@ -1219,7 +1221,7 @@ The business events identified for the project are as follows:
 \label{ssub:requirements_for_interfacing_with_adjacent_systems}
 % Begin SubSubSection
 \begin{enumerate}[{OE-IA}1. ]
-	\item The system must implement a read-only REST API endpoint allowing third-party and public access to non-sensitive aggregated environmental data.\newline
+	\item The system must implement a read-only \textbf{REST API} endpoint allowing third-party and public access to non-sensitive aggregated environmental data.\newline
 	{\bf Rationale:} It is important for the system to be able to get important safety information out to the general public, and providing this API to other services will facilitate this communication [4].
 	\item The system should be able to reliably receive and process data from designated sensors.\newline
 	{\bf Rationale:} The application must be able to receive sensor data in order to properly activate alerts and notify third party systems [4].
@@ -1307,7 +1309,7 @@ The business events identified for the project are as follows:
 \label{ssub:privacy_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{SR-P}1. ]
-	\item The system shall not collect, process, or store any personally identifiable information (PII).\newline
+	\item The system shall not collect, process, or store any personally identifiable information (\textbf{PII}).\newline
 	{\bf Rationale:} This will ensure compliance with privacy regulations while reducing legal, ethical, and security risks [21].
 	\item The public API shall only expose non-sensitive environmental data aggregated by city zone.\newline
 	{\bf Rationale:} Revealing precise sensor data to the public could reveal the location of sensors used in the city [21]. Giving aggregated data balances transparency with the security of the system.
@@ -1368,7 +1370,7 @@ The business events identified for the project are as follows:
 \label{ssub:compliance_requirements}
 % Begin SubSubSection
 \begin{enumerate}[{LR-COMP}1. ]
-	\item The app will not process any raw audio data. IoT devices will process audio and never transmit raw audio streams only sound levels.\newline
+	\item The app will not process any raw audio data. \textbf{IoT} devices will process audio and never transmit raw audio streams only sound levels.\newline
 	{\bf Rationale:} Live audio streaming without consent is wiretapping under the Personal Information Protection and Electronic Documents Act and the Criminal Code of Canada Section 184 [25] [26].
 	\item The app's public facing app will meet the AODA accessibility requirements.\newline
 	{\bf Rationale:} The app must meet the accessibility requirements by law [27].
@@ -1397,7 +1399,7 @@ The business events identified for the project are as follows:
 \section{Innovative Feature}
 \label{sec:innovative_feature}
 % Begin Section
-The chosen innovative feature we will be implementing is a public interface for our SCEMAS application that will allow any public user to view dashboards which will visualize all of the publicly available environmental metrics available from the REST API. This feature will benefit the product by increasing the number of users for our application. Since the REST API will be mainly used by third-party developers, we want to allow regular public users to also view and be informed of environmental issues. We have also come up with other innovative features, as listed below:
+The chosen innovative feature we will be implementing is a public interface for our \textbf{SCEMAS} application that will allow any public user to view dashboards which will visualize all of the publicly available environmental metrics available from the \textbf{REST API}. This feature will benefit the product by increasing the number of users for our application. Since the \textbf{REST API} will be mainly used by third-party developers, we want to allow regular public users to also view and be informed of environmental issues. We have also come up with other innovative features, as listed below:
 
 \begin{itemize}
 	\item Provide access to external resources that guide users on how to navigate specific environmental concerns whenever a warning is issued.
@@ -1488,7 +1490,7 @@ Buehlmann, Lukas
 	\item 1.5 Overview
 	\item 2.2 Product Functions
 	\item Use-case Diagram as a group
-	\item BE3. Sunlight is very high on the UV index
+	\item BE3. Sunlight is very high on the \textbf{UV} index
 	\item 5.6 Security Requirements
 	\item Brainstormed Innovative Ideas with group
 	\item Reviewed and edited final document
