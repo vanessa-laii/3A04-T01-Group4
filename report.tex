@@ -15,7 +15,7 @@
 \usepackage[hidelinks]{hyperref}
 %\usepackage{extarrows}
 %\usepackage{setspace}
-%\usepackage{xcolor}
+% \usepackage{xcolor}
 \usepackage{color}
 %------------------------------------------------------------------------------
 
@@ -342,7 +342,7 @@ The following are constraints which may limit the developer's options and approa
 \label{sub:assumptions_and_dependencies}
 % Begin SubSection
 \begin{enumerate}
-	\item We are a private company being contracted by the city government to create this platform. 
+	{\color{red}\item The project is assumed to be contracted to a private company to be developed. }
 	\item The project is assumed to be funded by the Government of Canada.
 	\item The system is assumed to be limited to operation within one city.
 	\item It is assumed that there is valid data flowing into the system from various \textbf{IoT} devices for Business Events to be successful (as stated in the Precondition for BE1).
@@ -416,13 +416,12 @@ The business events identified for the project are as follows:
 		\begin{enumerate}[{\bf VP1.}]
 		\item Administrator
 			\begin{itemize}
-				\item[5i.] The administrator approves the alert. 
-				\item[6i.] Administrator does not approve the alert.
+				\item[4i.] Administrator does not approve the alert.
 				\begin{itemize} 
-					\item[6i.1.] Feedback box appears and admin gives feedback on alert.
-					\item[6i.2.] Sends feedback back to operator.
+					\item[4i.1.] Feedback box appears and admin gives feedback on alert.
+					\item[4i.2.] Sends feedback back to operator.
 				\end{itemize}
-				\item[7i.2.] The administrator is contacted by the user about a failed alert setup.
+				\item[5i.2.] The administrator is contacted by the user about a failed alert setup.
 			\end{itemize}
 		\item City Operator
 			\begin{itemize}
@@ -431,10 +430,8 @@ The business events identified for the project are as follows:
 			\begin{enumerate}[1.]
 				\item User clicks on create alert tool in the dashboard navbar.
 				\item System displays the alert configuration tool.
-				\item User selects relevant environmental metrics, geographic area, threshold value(s) and timeframe for this alert.
-				\item User selects the alert visibility, public facing vs internal.
-				\item User reviews the summary and sends it to administrator for approval.
-				\item Once approved the system checks if the alert is valid and saves to database.
+				{\color{red}\item User selects relevant environmental metrics, geographic area, threshold value(s) and timeframe for this alert, selects the alert visibility and sends it to the administrator for approval.}
+				{\color{red}\item Administrator approves the alert the system checks if the alert is valid and saves to database.}
 				\item System creates the alert and displays a success message on screen.
 			\end{enumerate}
 			\begin{itemize}
@@ -444,16 +441,13 @@ The business events identified for the project are as follows:
 				\item[3i.] User enters invalid metric, or configuration. \\
 				\hspace{1cm}3i.1. System highlights the input box in red. \\
 				\hspace{1cm}3i.2. System prevents user from proceeding.
-				\item[4i.] If a public facing alert has been created the system checks if the alert is permitted within the law.
-				\item[5i.] User cancels the alert configuration. \\
-				\hspace{1cm}5i.1. User clicks cancel alert. \\
-				\hspace{1cm}5i.2. System discards all inputs and returns user to dashboard.
-				\item[6i.] Administrator does not approve the alert. \\
-				\hspace{1cm}6i.1. Feedback box appears and admin gives feedback on alert. \\
-				\hspace{1cm}6i.2. Sends feedback back to operator.
-				\item[7i.] System fails to create alert. \\
-				\hspace{1cm}7i.1. System displays error message on screen. \\
-				\hspace{1cm}7i.2. System provides option to contact the administrator.
+				\item[4i.] Administrator does not approve the alert. \\
+				\hspace{1cm}4i.1. Feedback box appears and admin gives feedback on alert. \\
+				\hspace{1cm}4i.2. Sends feedback back to operator.
+				\item[4ii.] If a public facing alert has been created the system checks if the alert is permitted within the law.
+				\item[5i.] System fails to create alert. \\
+				\hspace{1cm}5i.1. System displays error message on screen. \\
+				\hspace{1cm}5i.2. System provides option to contact the administrator.
 			\end{itemize}
 		\item Public User \\
 			N/A
@@ -463,7 +457,7 @@ The business events identified for the project are as follows:
 			N/A
 		\item Legal
 			\begin{itemize}
-				\item[4i.] If a public facing alert has been created the system checks if the alert is permitted within the law.
+				\item[4ii.] If a public facing alert has been created the system checks if the alert is permitted within the law.
 			\end{itemize}
 		\end{enumerate}
 		{\bf Global Scenario:}
@@ -473,30 +467,25 @@ The business events identified for the project are as follows:
 		\end{itemize}
 		\begin{enumerate}[1.]
 			\item User clicks on create alert tool in the dashboard navbar.
-			\item System displays the alert configuration tool.
-			\item User selects relevant environmental metrics, geographic area, threshold value(s) and timeframe for this alert.
-			\item User selects the alert visibility, public facing vs internal.
-			\item User reviews the summary and sends to administrator for approval.
-			\item Once approved the system checks if the alert is valid and saves to database.
-			\item System creates the alert and display a success message on screen.
+				\item System displays the alert configuration tool.
+				{\color{red}\item User selects relevant environmental metrics, geographic area, threshold value(s) and timeframe for this alert, selects the alert visibility and sends it to the administrator for approval.}
+				{\color{red}\item Administrator approves the alert the system checks if the alert is valid and saves to database.}
+				\item System creates the alert and displays a success message on screen.
 		\end{enumerate}
 		\begin{itemize}
 			\item[] {\bf Secondary Scenario:}
-			\item[1i.] User selects the wrong tool. \\
-			\hspace{1cm}1i.1. User selects go back.
-			\item[3i.] User enters invalid metric, or configuration. \\
-			\hspace{1cm}3i.1. System highlights the input box in red. \\
-			\hspace{1cm}3i.2. System prevents user from proceeding.
-			\item[4i.] If a public facing alert has been created the system checks if the alert is permitted within the law.
-			\item[5i.] User cancels the alert configuration. \\
-			\hspace{1cm}5i.1. User clicks cancel alert. \\
-			\hspace{1cm}5i.2. System discards all inputs and returns user to dashboard.
-			\item[6i.] Administrator does not approve the alert. \\
-			\hspace{1cm}6i.1. Feedback box appears and admin gives feedback on alert. \\
-			\hspace{1cm}6i.2. Sends feedback back to operator.
-			\item[7i.] System fails to create alert. \\
-			\hspace{1cm}7i.1. System displays error message on screen. \\
-			\hspace{1cm}7i.2. System provides option to contact the administrator.
+				\item[1i.] User selects the wrong tool. \\
+				\hspace{1cm}1i.1. User selects go back.
+				\item[3i.] User enters invalid metric, or configuration. \\
+				\hspace{1cm}3i.1. System highlights the input box in red. \\
+				\hspace{1cm}3i.2. System prevents user from proceeding.
+				\item[4i.] Administrator does not approve the alert. \\
+				\hspace{1cm}4i.1. Feedback box appears and admin gives feedback on alert. \\
+				\hspace{1cm}4i.2. Sends feedback back to operator.
+				\item[4ii.] If a public facing alert has been created the system checks if the alert is permitted within the law.
+				\item[5i.] System fails to create alert. \\
+				\hspace{1cm}5i.1. System displays error message on screen. \\
+				\hspace{1cm}5i.2. System provides option to contact the administrator.
 		\end{itemize}
 	
 
