@@ -12,6 +12,7 @@
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{array}
+\usepackage{tabularx}
 %\usepackage{extarrows}
 %\usepackage{setspace}
 %------------------------------------------------------------------------------
@@ -78,8 +79,7 @@ State the purpose and intended audience for the document.
 \subsection{System Description}
 \label{sub:system_description}
 % Begin SubSection
-Give a brief description of the system. This could be a paragraph or two to give some context to this document.
-
+This system will monitor real-time sensor data input from across a city to measure environmental changes. The system will be primarily used by city operators who have access to a dashboard which shows recent data aggregated over time as well as environmental alerts. The management of alerts and accounts is done by administrators who have greater permissions than other users. The system will also expose a REST API for public users which only exposes non-sensitive environmental data aggregated by city zone. The system will also have an app for public users to easily view data from the API. All major actions are logged for audit purposes and the system implements rate-limiting to prevent denial-of-service attacks and to maintain high uptime. 
 % End SubSection
 
 \subsection{Overview}
@@ -106,20 +106,51 @@ This section should provide an overview of the overall architectural design of y
 \subsection{System Architecture}
 \label{sub:system_architecture}
 % Begin SubSection
-\begin{itemize}
-	\item Identify and explain the overall architecture of your system
-	\item Be sure to clearly state the name of the architecture you used (this is the name of the architectural pattern, not the name of your system)
-	\item Provide the reasoning and justification of the choice of architecture
-	\item Provide a structural architecture diagram showing the relationship among the subsystems (if appropriate)
-	\item List any design alternatives you considered, but eliminated (and explain why you eliminated them)
+SCHEMAS will use the Presentation-Abstraction-Control (PAC) Interaction-Oriented Software Architecture style. Our application will be structured with a hierarchy of independent agents, and each agent will have three components: Presentation (UI), Abstraction (data model), and Control (logic). \\
+
+The agents are defined as follows:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|l|p{8cm}|}
+\hline
+\textbf{Level} & \textbf{Agent} & \textbf{Purpose} \\
+\hline
+Top & City Agent & Central coordinator of the entire system; handles the internal dashboard for operators and administrators and orchestrates all other agents \\
+\hline
+Middle & Public Agent & Handles the public-facing REST API and public dashboard, exposing only non-sensitive, read-only information to external users \\
+\hline
+Middle & Sensor Processing Agent & Ingests and processes incoming external sensor data and distributes results to relevant agents \\
+\hline
+Bottom & Account Agent & Manages account creation, login, and account profile details for all system users \\
+\hline
+Bottom & Alert Agent & Manages alert rule creation, triggered alert views, and alert verification \\
+\hline
+Bottom & Audit Log Agent & Records system events from all agents and exposes the audit log view to authorized users \\
+\hline
+\end{tabular}
+\caption{PAC Architecture Agents}
+\label{tab:pac-agents}
+\end{table}
+
+Within the Abstractions of our architecture, there are four databases present: an account information database, an audit log database, a configured alerts database and a sensor data database (storing time series data).
+
+The application will have a Presentation-Abstraction-Control (PAC) Architecture Style because it structures a system as a hierarchy of cooperating and independent agents. The top-level agent will be responsible for the overall system functionality, and intermediate/bottom-level agents will handle specific tasks/responsibilities. This architecture also supports multiple views to display the same data in multiple ways simultaneously, which is extremely suited for SCEMAS since it has a City View (for internal users) and a Public View (for external users). Another reason why we decided on this architecture style is how it adheres to the separation of concerns principle. Each agent contains its own Presentation-Abstraction-Control that is responsible for its specific functionality. This can be beneficial for the system because it will be easy to maintain, replace and extend the agents when there are more business requirements without affecting the rest of the application.
+
+Various other architectural styles were considered for this project, but were eliminated from contention as some characteristics of them were not well-suited for the system as a whole.
+
+The repository architecture was considered, but eliminated due to the nature of our system’s data. Although there is a need for shared data between agents within the SCHEMAS system, the sensor data is active and thus would not work with a passive data store model.
+
+The blackboard architecture was eliminated due to our system not requiring specialized modules with domain expertise contributing to problem-solving. Another reason for the elimination is that our application does not have any non-deterministic problems. This would cause difficulty in deciding when to terminate reasoning.
+
+The Model View Controller Architecture (One and Two) was considered as an option as well, but ended up eliminating it as an option as the system requires a diverse set of data that may update at different frequencies. It was also determined that choosing the MVC architecture could negatively affect the sustainability of the system, as there is high coupling between the View and Model.
+
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=\textwidth]{ImagesD2/SystemDiagram.png}
 	\caption{System Architecture Diagram}
 	\label{fig:system_diagram}
 \end{figure}
-
-\end{itemize}
 
 
 % End SubSection
@@ -243,6 +274,19 @@ Olejniczak, David
 \includegraphics[width=0.3\textwidth]{images/David}
 % End Section
 
+\noindent
+Lai, Vanessa
+\begin{itemize}
+\item Participated in group discussions for system architecture and subsystems
+\item Section 2 Analysis Class diagram with group 
+\item Section 1.2 System Description
+\item Section 3.1 System Architecture
+\item Helped write and format LaTeX document
+
+\end{itemize}
+
+\includegraphics[width=0.3\textwidth]{images/Vanessa.png}
+% End Section
 
 \end{document}
 %------------------------------------------------------------------------------
