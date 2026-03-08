@@ -160,22 +160,25 @@ The Model View Controller Architecture (One and Two) was considered as an option
 % Begin SubSection
  Provide a list of your subsystems, with a brief description of each. Be sure to document its purpose and relationship to other subsystems.
 
- SCEMAS is organized into five primary subsystems: Public Access, City Dashboard, Account Management, Alert Management, and Audit Logging. These subsystems operate within the broader PAC architectural style. Each subsystem encapsulates a specific responsibility of the system while interacting with each other to support the overall functionality of the platform.
+ SCEMAS is organized into six primary subsystems: Public Access, City Dashboard, Sensor Processing, Account Management, Alert Management, and Audit Logging. These subsystems operate within the broader PAC architectural style. Each subsystem encapsulates a specific responsibility of the system while interacting with each other to support the overall functionality of the platform.
 
 	\subsubsection*{Public Access Subsystem}
 	The Public Access Subsystem manages all functionality related to external users. It provides a read-only REST API and a public dashboard that allows residents and third-party developers to access non-sensitive environmental data.
 
 	\subsubsection*{City Dashboard Subsystem}
-	The City Dashboard Subsystem supports the internal monitoring interface used by city operators and administrators. Through this subsystem, authorized users can view environmental conditions across geographic zones, monitor alerts, and analyze environmental trends. It communicates with the system's sensor data storage to obtain environmental measurements and works closely with the Alert Management Subsystem to present active alerts and related information on the dashboard.
+	The City Dashboard Subsystem supports the internal monitoring interface used by city operators and administrators. Through this subsystem, authorized users can view environmental conditions across geographic zones, monitor alerts, and analyze environmental trends. It communicates with the system's sensor data storage to get environmental measurements and works with the Alert Management Subsystem to show active alerts and related information on the dashboard.
+
+	\subsubsection*{Sensor Processing Subsystem}
+	The Sensor Processing Subsystem is responsible for ingesting and processing environmental telemetry from external sensors. Incoming data is validated, formatted, and prepared for use within the system before being stored in the sensor data repository. This subsystem sends the processed environmental data to other subsystems, specifically the City Dashboard and Alert Management Subsystems, allowing real-time monitoring and alert detection.
 
 	\subsubsection*{Account Management Subsystem}
-	The Account Management Subsystem is responsible for handling user authentication and account administration. It enables the creation and management of user accounts and ensures that access to system features is controlled using role-based access permissions. This subsystem also interacts with the Audit Logging Subsystem to record key account-related events such as login attempts or account updates.
+	The Account Management Subsystem handles user login and account management. It allows accounts to be created and ensures that access to system features is controlled using role-based access. This subsystem also works with the Audit Logging Subsystem to record important account activities such as login attempts and account updates.
 
 	\subsubsection*{Alert Management Subsystem}
-	The Alert Management Subsystem is responsible for creating, verifying, and managing alert rules in the system. City operators can configure alerts based on environmental thresholds, while administrators review and approve these rules before they become active. When sensor data exceeds a configured threshold, the subsystem generates and manages the alert and ensures it appears on the dashboard for relevant users. All alert-related actions are also recorded in the Audit Logging Subsystem for tracking and auditing purposes.
+	The Alert Management Subsystem handles the creation and management of alert rules in the system. City operators can create alerts based on environmental thresholds, while administrators review and approve these alerts before they become active. When sensor data passes a defined threshold, the subsystem generates an alert and ensures it appears on the dashboard. Alert-related actions are also recorded in the Audit Logging Subsystem for tracking and auditing purposes.
 
 	\subsubsection*{Audit Logging Subsystem}
-	The Audit Logging Subsystem maintains a record of significant activities occurring throughout the system. It stores logs related to authentication events, alert management actions, and other important operations. Administrators can review these records through the audit log interface to monitor system activity, support investigations, and maintain accountability within the platform.
+	The Audit Logging Subsystem records important activities that occur throughout the system. It stores logs related to authentication events and alert actions. Administrators can view these logs through the audit log interface to monitor system activity and review past events.
 % End SubSection
 
 % End Section
@@ -411,8 +414,7 @@ Khan, Saqib
 \item Helped write and format LaTeX document
 \end{itemize}
 
-% Signature placeholder
-\vspace{1cm}
+\includegraphics[width=0.3\textwidth]{images/Saqib.png}
 
 \end{document}
 %------------------------------------------------------------------------------
