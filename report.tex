@@ -218,7 +218,7 @@ capabilities of public facing data.
 
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=0.75\linewidth]{A04_System.png}
+    \includegraphics[width=1\linewidth]{A04_System.png}
     \caption{\textbf{SCEMAS} System Diagram}
     \label{fig:system_diagram}
 \end{figure}
@@ -261,6 +261,7 @@ functionality to authenticate users and limit the access of different users base
 \end{center}
 % End SubSection
 
+\clearpage
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.75\linewidth]{A04_State.png}
@@ -353,6 +354,7 @@ The following are constraints which may limit the developer's options and approa
 \subsection{Apportioning of Requirements}
 \label{sub:apportioning_of_requirements}
 % Begin SubSection
+{\color{red}
 The following features have been identified as candidates for future releases and will not be included in the first version of the system:
 
 \begin{enumerate}
@@ -362,6 +364,7 @@ The following features have been identified as candidates for future releases an
 
     \item \textbf{Advanced Predictive Analytics:} Predictive environmental risk analysis based on data trends will not be included in the first version of the system and may be implemented in a future release.
 \end{enumerate}% End SubSection
+}
 
 % End Section
 
@@ -371,7 +374,7 @@ The following features have been identified as candidates for future releases an
 % Begin Section
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=0.75\linewidth]{A04_UseCase.png}
+    \includegraphics[width=1\linewidth]{A04_UseCase.png}
     \caption{\textbf{SCEMAS} Use-Case Diagram}
     \label{fig:use_case_diagram}
 \end{figure}
@@ -604,19 +607,22 @@ The business events identified for the project are as follows:
 				\item[] {\bf Main Success Scenario:}
 			\end{itemize}
 			\begin{enumerate}[1.]
-				\item The system detects incoming sensor data that violates an alert rule.
-				\item Alert is automatically generated.
-				\item Alert severity, timestamp, and affected zone are recorded.
-				\item The system notifies city operator dashboards in affected areas.
-				\item An Administrator reviews the triggered alert.
-				\item Administrator verifies that the alert triggered correctly.
+				{\color{red}
+					\item The system detects and logs an alert rule violation
+					\item An Administrator opens alert for review
+					\item The system displays triggered alert and prompts for verification
+					\item Administrator verifies that the alert triggered correctly
+					\item The system logs the alert verification and administrator ID to audit log
+				}
 			\end{enumerate}
 			\begin{itemize}
 				\item[] {\bf Secondary Scenario:}
 				\item[2i.] System fails to generate alert. \\
 				\hspace{1cm}2i.1. System logs the failure and notifies administrators.
-				\item[6i.] Administrator finds fault in alert rule configuration. \\
-				\hspace{1cm}6i.2. Administrator modifies the faulty alert configuration.
+				{\color{red}
+				\item[4i.] Administrator finds fault in alert rule configuration. \\
+				\hspace{1cm}4i.2. Administrator modifies the faulty alert configuration.
+				}
 			\end{itemize}
 		\item City Operator
 			\begin{itemize}
