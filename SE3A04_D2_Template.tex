@@ -39,10 +39,7 @@
 \noindent{\bf Tutorial Number:} T01\\
 {\bf Group Number:} G4 \\
 {\bf Group Members:} Lukas Buehlmann, David Olejniczak,Vanessa Lai, Saqib Khan, Suzanne Abdullah
-\begin{itemize}
-	\item List all Group Member Names (as listed in Avenue)
-	\item You do not need to use student \#s or macid (keep those private).
-\end{itemize}
+
 
 \section*{IMPORTANT NOTES}
 \begin{itemize}
@@ -68,12 +65,16 @@
 \label{sec:introduction}
 % Begin Section
 
-This section should provide an brief overview of the entire document.
-
 \subsection{Purpose}
 \label{sub:purpose}
 % Begin SubSection
-State the purpose and intended audience for the document.
+This document provides a high-level overview of the SCHEMAS system architecture, including 
+high-level design considerations of the system, as well as design considerations for various 
+subsystems.\\\\
+This document is intended for internal SCHEMAS stakeholders, including but not limited 
+to project managers, developers, domain experts, and SCHEMAS team members/investors. 
+SCHEMAS Deliverable 1 should be read prior to, and technical knowledge may be beneficial 
+in better understanding the contents of the document.
 % End SubSection
 
 \subsection{System Description}
@@ -85,64 +86,67 @@ This system will monitor real-time sensor data input from across a city to measu
 \subsection{Overview}
 \label{sub:overview}
 % Begin SubSection
-Describe what the rest of the document contains and explain how the document is organised (e.g. "In Section 2 we discuss...in Section 3...").
+In section 2, the document presents an Analysis Class Diagram for SCHEMAS. Section 3 discusses the system's architectural design, the considered alternatives, and the reasoning behind the design decisions. Ultimately, section 4 uses Class Responsibility Collaboration (CRC) Cards to showcase classes, responsibilities and the interactions between classes in the system.
 
 % End SubSection
 
 % End Section
-
+\newpage
 \section{Analysis Class Diagram}
 \label{sec:analysis_class_diagram}
 % Begin Section
-This section should provide an analysis class diagram for your application.
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.75\linewidth]{ImagesD2/A04_Analysis.png}
+    \caption{\textbf{SCEMAS} Analysis Class Diagram}
+    \label{fig:analysis_class_diagram}
+\end{figure}
 % End Section
 
-
+\newpage
 \section{Architectural Design}
 \label{sec:architectural_design}
 % Begin Section
-This section should provide an overview of the overall architectural design of your application. Your overall architecture should show the division of the system into subsystems with high cohesion and low coupling.
 
 \subsection{System Architecture}
 \label{sub:system_architecture}
 % Begin SubSection
-SCHEMAS will use the Presentation-Abstraction-Control (PAC) Interaction-Oriented Software Architecture style. Our application will be structured with a hierarchy of independent agents, and each agent will have three components: Presentation (UI), Abstraction (data model), and Control (logic). \\
-
+SCHEMAS will use the Presentation-Abstraction-Control (PAC) Interaction-Oriented Software Architecture style. Our application will be structured with a hierarchy of independent agents, and each agent will have three components: Presentation (UI), Abstraction (data model), and Control (logic). \\\\
 The agents are defined as follows:
 
 \begin{table}[H]
-\centering
-\begin{tabular}{|l|l|p{8cm}|}
-\hline
-\textbf{Level} & \textbf{Agent} & \textbf{Purpose} \\
-\hline
-Top & City Agent & Central coordinator of the entire system; handles the internal dashboard for operators and administrators and orchestrates all other agents \\
-\hline
-Middle & Public Agent & Handles the public-facing REST API and public dashboard, exposing only non-sensitive, read-only information to external users \\
-\hline
-Middle & Sensor Processing Agent & Ingests and processes incoming external sensor data and distributes results to relevant agents \\
-\hline
-Bottom & Account Agent & Manages account creation, login, and account profile details for all system users \\
-\hline
-Bottom & Alert Agent & Manages alert rule creation, triggered alert views, and alert verification \\
-\hline
-Bottom & Audit Log Agent & Records system events from all agents and exposes the audit log view to authorized users \\
-\hline
-\end{tabular}
-\caption{PAC Architecture Agents}
-\label{tab:pac-agents}
+	\centering
+	\begin{tabular}{|l|l|p{8cm}|}
+		\hline
+		\textbf{Level} & \textbf{Agent} & \textbf{Purpose} \\
+		\hline
+		Top & City Agent & Central coordinator of the entire system; handles the internal dashboard for operators and administrators and orchestrates all other agents \\
+		\hline
+		Middle & Public Agent & Handles the public-facing REST API and public dashboard, exposing only non-sensitive, read-only information to external users \\
+		\hline
+		Middle & Sensor Processing Agent & Ingests and processes incoming external sensor data and distributes results to relevant agents \\
+		\hline
+		Bottom & Account Agent & Manages account creation, login, and account profile details for all system users \\
+		\hline
+		Bottom & Alert Agent & Manages alert rule creation, triggered alert views, and alert verification \\
+		\hline
+		Bottom & Audit Log Agent & Records system events from all agents and exposes the audit log view to authorized users \\
+		\hline
+	\end{tabular}
+	\caption{PAC Architecture Agents}
+	\label{tab:pac-agents}
 \end{table}
 
 Within the Abstractions of our architecture, there are four databases present: an account information database, an audit log database, a configured alerts database and a sensor data database (storing time series data).
-
+\\\\
 The application will have a Presentation-Abstraction-Control (PAC) Architecture Style because it structures a system as a hierarchy of cooperating and independent agents. The top-level agent will be responsible for the overall system functionality, and intermediate/bottom-level agents will handle specific tasks/responsibilities. This architecture also supports multiple views to display the same data in multiple ways simultaneously, which is extremely suited for SCEMAS since it has a City View (for internal users) and a Public View (for external users). Another reason why we decided on this architecture style is how it adheres to the separation of concerns principle. Each agent contains its own Presentation-Abstraction-Control that is responsible for its specific functionality. This can be beneficial for the system because it will be easy to maintain, replace and extend the agents when there are more business requirements without affecting the rest of the application.
-
+\\\\
 Various other architectural styles were considered for this project, but were eliminated from contention as some characteristics of them were not well-suited for the system as a whole.
-
+\\\\
 The repository architecture was considered, but eliminated due to the nature of our system’s data. Although there is a need for shared data between agents within the SCHEMAS system, the sensor data is active and thus would not work with a passive data store model.
-
+\\\\
 The blackboard architecture was eliminated due to our system not requiring specialized modules with domain expertise contributing to problem-solving. Another reason for the elimination is that our application does not have any non-deterministic problems. This would cause difficulty in deciding when to terminate reasoning.
-
+\\\\
 The Model View Controller Architecture (One and Two) was considered as an option as well, but ended up eliminating it as an option as the system requires a diverse set of data that may update at different frequencies. It was also determined that choosing the MVC architecture could negatively affect the sustainability of the system, as there is high coupling between the View and Model.
 
 \begin{figure}[H]
@@ -158,8 +162,6 @@ The Model View Controller Architecture (One and Two) was considered as an option
 \subsection{Subsystems}
 \label{sub:subsystems}
 % Begin SubSection
- Provide a list of your subsystems, with a brief description of each. Be sure to document its purpose and relationship to other subsystems.
-
  SCEMAS is organized into six primary subsystems: Public Access, City Dashboard, Sensor Processing, Account Management, Alert Management, and Audit Logging. These subsystems operate within the broader PAC architectural style. Each subsystem encapsulates a specific responsibility of the system while interacting with each other to support the overall functionality of the platform.
 
 	\subsubsection*{Public Access Subsystem}
@@ -182,175 +184,419 @@ The Model View Controller Architecture (One and Two) was considered as an option
 % End SubSection
 
 % End Section
-	
+\newpage
 \section{Class Responsibility Collaboration (CRC) Cards}
 \label{sec:class_responsibility_collaboration_crc_cards}
 % Begin Section
-This section should contain all of your CRC cards.
 
-\begin{itemize}
-	\item Provide a CRC Card for each identified class
-	\item Please use the format outlined in tutorial, i.e., 
-	\begin{table}[h!]
-		\centering
-		\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
-		\hline 
-		 \multicolumn{2}{|l|}{\textbf{Class Name:} External API (Boundary)} \\
-		\hline
-		\textbf{Responsibility:} & \textbf{Collaborators:} \\
-		\hline 
-    Knows Public Controller \newline
-    Provides public sensor data \newline 
-    Provides API documentation 
-    & Public Controller \\
-    \hline
-    \end{tabular}
-	\end{table}
+\begin{table}[h!]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline 
+		\multicolumn{2}{|l|}{\textbf{Class Name:} External API (Boundary)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline 
+	Knows Public Controller \newline
+	Provides public sensor data \newline 
+	Provides API documentation 
+	& Public Controller \\
+	\hline
+\end{tabular}
+\end{table}
 
-	\begin{table}[h!]
-		\centering
-		\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
-		\hline 
-		 \multicolumn{2}{|l|}{\textbf{Class Name:} Public User Interface (Boundary)} \\
-		\hline
-		\textbf{Responsibility:} & \textbf{Collaborators:} \\
-		\hline
-		Knows Public Controller \newline
+\begin{table}[h!]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline 
+		\multicolumn{2}{|l|}{\textbf{Class Name:} Public User Interface (Boundary)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline
+	Knows Public Controller \newline
 Provides public sensor data \newline
 Provides public data alerts 
 & Public Controller\\
-		\hline
-		\end{tabular}
-	\end{table}
+	\hline
+	\end{tabular}
+\end{table}
 
-	\begin{table}[h!]
-		\centering
-		\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
-		\hline 
-		 \multicolumn{2}{|l|}{\textbf{Class Name:} Public Controller} \\
-		\hline
-		\textbf{Responsibility:} & \textbf{Collaborators:} \\
-		\hline
-		Knows External API \newline
-		Knows Public User Interface \newline
-		Knows Time Series Sensor Database \newline
-		Handles public data sensor processing \newline
-		Handles public data alert processing
-		& 
-		External API \newline
-		Public User Interface \newline
-		Time Series Sensor Database
-		\\
-		\hline
-		\end{tabular}
-	\end{table}
+\begin{table}[h!]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline 
+		\multicolumn{2}{|l|}{\textbf{Class Name:} Public Controller (Controller)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline
+	Knows External API \newline
+	Knows Public User Interface \newline
+	Knows Time Series Sensor Database \newline
+	Handles public data sensor processing \newline
+	Handles public data alert processing
+	& 
+	External API \newline
+	Public User Interface \newline
+	Time Series Sensor Database \newline
+	Processing of Sensor Data \newline
+	City Controller
+	\\
+	\hline
+	\end{tabular}
+\end{table}
 
-	\begin{table}[h!]
-		\centering
-		\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
-		\hline
-		\multicolumn{2}{|l|}{\textbf{Class Name:} Account Management (Control)} \\
-		\hline
-		\textbf{Responsibility:} & \textbf{Collaborators:} \\
-		\hline
-		Knows Account Data \newline
-		Knows Account Login \newline
-		Knows Create Account \newline
-		Knows Audit Log Data \newline
-		Handles user authentication \newline
-		Handles account creation requests \newline
-		Handles role-based access control \newline
-		Handles account lookup \newline
-		Handles logging of important account-related events
-		&
-		Audit Log Data \newline
-		Account Data \newline
-		Account Login \newline
-		Create Account
-		\\
-		\hline
-		\end{tabular}
-	\end{table}
+\begin{table}[h!]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline 
+		\multicolumn{2}{|l|}{\textbf{Class Name:} Operator Interface (Boundary)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline
+	Knows City Controller \newline
+	Handles presentation of environmental data
+	& 
+	City Controller
+	\\
+	\hline
+	\end{tabular}
+\end{table}
 
-	
-	\begin{table}[h!]
-		\centering
-		\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
-		\hline
-		\multicolumn{2}{|l|}{\textbf{Class Name:} Account Data (Entity)} \\
-		\hline
-		\textbf{Responsibility:} & \textbf{Collaborators:} \\
-		\hline
-		Knows Account Management \newline
-		Knows user credentials \newline
-		Knows user role information \newline
-		Handles storage of account data \newline
-		Handles retrieval of account data for authentication and account lookup
-		&
-		Account Management
-		\\
-		\hline
-		\end{tabular}
-	\end{table}
+\begin{table}[h!]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline 
+		\multicolumn{2}{|l|}{\textbf{Class Name:} Administrator Interface (Boundary)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline
+	Knows City Controller \newline
+	Handles display of administrative controls
+	& 
+	City Controller
+	\\
+	\hline
+	\end{tabular}
+\end{table}
 
-	\begin{table}[h!]
-		\centering
-		\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
-		\hline
-		\multicolumn{2}{|l|}{\textbf{Class Name:} Account Login (Boundary)} \\
-		\hline
-		\textbf{Responsibility:} & \textbf{Collaborators:} \\
-		\hline
-		Knows Account Management \newline
-		Handles click-event of ``Login'' button \newline
-		Handles username input \newline
-		Handles password input \newline
-		Handles display of login result
-		&
-		Account Management
-		\\
-		\hline
-		\end{tabular}
-	\end{table}
+\begin{table}[h!]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline 
+		\multicolumn{2}{|l|}{\textbf{Class Name:} City Controller (Controller)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline
+	Knows Operator Interface \newline
+	Knows Administrator Interface \newline
+	Knows Time Series Sensor Database \newline
+	Handles communication with other agents \newline
+	Handles feed of relevant sensor data to Operator Interface \newline
+	Handles input requests from Operator and Administrator interfaces
+	& 
+	Operator Interface \newline
+	Administrator Interface \newline
+	Time Series Sensor Database \newline
+	Public Controller \newline
+	Processing of Sensor Data \newline
+	Alert Management \newline
+	Account Management
+	\\
+	\hline
+	\end{tabular}
+\end{table}
 
-	\begin{table}[h!]
-		\centering
-		\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
-		\hline
-		\multicolumn{2}{|l|}{\textbf{Class Name:} Create Account (Boundary)} \\
-		\hline
-		\textbf{Responsibility:} & \textbf{Collaborators:} \\
-		\hline
-		Knows Account Management \newline
-		Handles click-event of ``Create Account'' button \newline
-		Handles input of new account details \newline
-		Handles display of account creation result
-		&
-		Account Management
-		\\
-		\hline
-		\end{tabular}
-	\end{table}
+\begin{table}[h!]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline 
+		\multicolumn{2}{|l|}{\textbf{Class Name:} Time Series Sensor Database (Entity)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline
+	Knows Processing of Sensor Data controller \newline
+	Knows Public Controller \newline
+	Knows City Controller \newline
+	Knows all collected and processed sensor data
+	&
+	Public Controller \newline
+	City Controller \newline
+	Processing of Sensor Data
+	\\
+	\hline
+	\end{tabular}
+\end{table}
 
-	\begin{table}[h!]
-		\centering
-		\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
-		\hline 
-		 \multicolumn{2}{|l|}{\textbf{Class Name:}} \\
-		\hline
-		\textbf{Responsibility:} & \textbf{Collaborators:} \\
-		\hline
-		\vspace{1in} & \\
-		\hline
-		\end{tabular}
-	\end{table}
+\begin{table}[h!]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline 
+		\multicolumn{2}{|l|}{\textbf{Class Name:} External Sensor Data (Boundary)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline
+	Knows Processing of Sensor Data controller \newline
+	Handles collection of data from external sensors
+	&
+	Processing of Sensor Data
+	\\
+	\hline
+	\end{tabular}
+\end{table}
 
-	
-	
-\end{itemize}
+\begin{table}[h!]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline 
+		\multicolumn{2}{|l|}{\textbf{Class Name:} Processing of Sensor Data (Controller)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline
+	Knows External Sensor Data \newline
+	Knows Time Series Sensor Database \newline
+	Knows Configured Alerts \newline
+	Handles aggregation of sensor data \newline
+	Handles comparison of real time data to configured alerts
+	&
+	External Sensor Data \newline
+	Time Series Sensor Database \newline
+	Configured Alerts \newline
+	Public Controller \newline
+	City Controller
+	\\
+	\hline
+	\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline 
+		\multicolumn{2}{|l|}{\textbf{Class Name:} Configured Alerts (Entity)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline
+	Knows Processing of Sensor Data \newline
+	Knows Alert Management \newline
+	Knows existing alert rules \newline
+	Knows alerts that have recently triggered \newline
+	Knows alerts waiting for admin verification
+	&
+	Processing of Sensor Data \newline
+	Alert Management
+	\\
+	\hline
+	\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline 
+		\multicolumn{2}{|l|}{\textbf{Class Name:} Create an Alert Rule (Boundary)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline
+	Knows Alert Management controller \newline
+	Handles Creating an Alert Rule event \newline
+	Handles Modifying an Alert Rule event 
+	&
+	Alert Management
+	\\
+	\hline
+	\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline 
+		\multicolumn{2}{|l|}{\textbf{Class Name:} Triggered Alert View (Boundary)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline
+	Knows Alert Management controller \newline
+	Handles display of triggered alerts
+	&
+	Alert Management
+	\\
+	\hline
+	\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline 
+		\multicolumn{2}{|l|}{\textbf{Class Name:} Alert Verification (Boundary)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline
+	Knows Alert Management controller \newline
+	Handles display of alerts waiting for verification
+	&
+	Alert Management
+	\\
+	\hline
+	\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline 
+		\multicolumn{2}{|l|}{\textbf{Class Name:} Alert Management (Control)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline
+	Knows Create an Alert Rule \newline
+	Knows Triggered Alert View \newline
+	Knows Alert Verification \newline
+	Knows Audit Log Data \newline
+	Handles creation of new alert rules \newline
+	Handles verification of alerts \newline
+	Handles logging alert changes \newline
+	Handles communication of triggered alerts
+	&
+	Create an Alert Rule \newline
+	Triggered Alert View \newline
+	Alert Verification \newline
+	Audit Log Data \newline
+	City Controller
+	\\
+	\hline
+	\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline 
+		\multicolumn{2}{|l|}{\textbf{Class Name:} Audit Log Data (Entity)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline
+	Knows Alert Management controller \newline
+	Knows Audit Log View boundary \newline
+	Knows Account Management controller \newline
+	Knows Audit information
+	&
+	Alert Management \newline
+	Account Management \newline
+	Audit Log View
+	\\
+	\hline
+	\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline 
+		\multicolumn{2}{|l|}{\textbf{Class Name:} Audit Log View (Boundary)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline
+	Knows Audit Log Data Entity \newline
+	Handles Checking Audit Log Event 
+	&
+	Audit Log Data
+	\\
+	\hline
+	\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline
+	\multicolumn{2}{|l|}{\textbf{Class Name:} Account Management (Control)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline
+	Knows Account Data \newline
+	Knows Account Login \newline
+	Knows Create Account \newline
+	Knows Audit Log Data \newline
+	Handles user authentication \newline
+	Handles account creation requests \newline
+	Handles role-based access control \newline
+	Handles account lookup \newline
+	Handles logging of important account-related events
+	&
+	Audit Log Data \newline
+	Account Data \newline
+	Account Login \newline
+	Create Account \newline
+	City Controller
+	\\
+	\hline
+	\end{tabular}
+\end{table}
+
+
+\begin{table}[h!]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline
+	\multicolumn{2}{|l|}{\textbf{Class Name:} Account Data (Entity)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline
+	Knows Account Management \newline
+	Knows user credentials \newline
+	Knows user role information \newline
+	Handles storage of account data \newline
+	Handles retrieval of account data for authentication and account lookup
+	&
+	Account Management
+	\\
+	\hline
+	\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline
+	\multicolumn{2}{|l|}{\textbf{Class Name:} Account Login (Boundary)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline
+	Knows Account Management \newline
+	Handles click-event of ``Login'' button \newline
+	Handles username input \newline
+	Handles password input \newline
+	Handles display of login result
+	&
+	Account Management
+	\\
+	\hline
+	\end{tabular}
+\end{table}
+
+\begin{table}[h]
+	\centering
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{7cm}|>{\raggedright\arraybackslash}p{7cm}|}
+	\hline
+	\multicolumn{2}{|l|}{\textbf{Class Name:} Create Account (Boundary)} \\
+	\hline
+	\textbf{Responsibility:} & \textbf{Collaborators:} \\
+	\hline
+	Knows Account Management \newline
+	Handles click-event of ``Create Account'' button \newline
+	Handles input of new account details \newline
+	Handles display of account creation result
+	&
+	Account Management
+	\\
+	\hline
+	\end{tabular}
+\end{table}
 % End Section
 
 \appendix
+\clearpage
 \section{Division of Labour}
 \label{sec:division_of_labour}
 % Begin Section
@@ -415,6 +661,45 @@ Khan, Saqib
 \end{itemize}
 
 \includegraphics[width=0.3\textwidth]{images/Saqib.png}
+
+\noindent
+Abdullah, Suzanne
+\begin{itemize}
+\item Analysis Class diagram with group
+\item Discussed main architecture choice in tutorial
+\item Section 3.1 System Architecture description with Vanessa
+\item Section 4, completed CRC cards as shown below
+\begin{itemize}
+	\item Time Series Sensor Database (Entity)
+	\item External Sensor Data (Boundary)
+	\item Create an Alert Rule (Boundary)
+	\item Audit Log View (Boundary)
+	\item Audit Log Data (Entity)
+\end{itemize}
+\item Fixed deliverable 1, requirement 5.4.3
+\end{itemize}
+
+\includegraphics[width=0.3\textwidth]{images/Suzanne.jpg}
+
+\noindent
+Buehlmann, Lukas
+\begin{itemize}
+\item Wrote section 1.2
+\item Contributed to the creation of the Analysis Class Diagram
+\item Discussed the system architecture that would be ideal for the system
+\item Wrote the CRC cards:
+\begin{itemize}
+	\item Processing of Sensor Data
+	\item Configured Alerts
+	\item Triggered Alert View
+	\item Alert Verification
+	\item Alert Management
+\end{itemize}
+\item Revised BE3 in D1
+\item Wrote CRC cards into LaTeX document
+\end{itemize}
+
+\includegraphics[width=0.3\textwidth]{images/Lukas.jpg}
 
 \end{document}
 %------------------------------------------------------------------------------
