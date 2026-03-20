@@ -503,13 +503,12 @@ The business events identified for the project are as follows:
 		\begin{enumerate}[{\bf VP1.}]
 		\item Administrator
 			\begin{itemize}
-				\item[6i.] The administrator approves the alert. 
-				\item[7i.] Administrator does not approve the alert.
-				\begin{itemize} 
-					\item[7i.1.] Feedback box appears and admin gives feedback on alert.
-					\item[7i.2.] Sends feedback back to operator.
+				\item[4i.] Administrator does not approve the alert.
+				\begin{itemize}
+					\item[4i.1.] Feedback box appears and admin gives feedback on alert.
+					\item[4i.2.] Sends feedback back to operator.
 				\end{itemize}
-				\item[8i.2.] The administrator is contacted by the user about a failed alert setup.
+				\item[5i.2.] The administrator is contacted by the user about a failed alert setup.
 			\end{itemize}
 		\item City Operator
 			\begin{itemize}
@@ -518,11 +517,8 @@ The business events identified for the project are as follows:
 			\begin{enumerate}[1.]
 				\item User selects "Manage Alerts" section.
 				\item System fetches and displays a list of currently active and inactive alert rules.
-				\item User selects an alert rule to modify.
-				\item User edits relevant environmental metrics, geographic area, threshold value(s) and timeframe for chosen alert.
-				\item User chooses whether to keep current visibility or change alert visibility, public facing vs internal.
-				\item User reviews the summary and sends to administrator for approval.
-				\item Once approved the system checks if the alert is valid and saves to database.
+				{\color{red}\item User selects an alert rule to modify, edits relevant environmental metrics, geographic area, threshold value(s) and timeframe, chooses whether to keep or change the alert visibility, and sends it to the administrator for approval.}
+				{\color{red}\item Administrator approves the alert, the system checks if the alert is valid and saves to database.}
 				\item System displays a success message indicating the rule has been updated.
 				\item System logs the changes to Audit log.
 			\end{enumerate}
@@ -532,17 +528,18 @@ The business events identified for the project are as follows:
 				\hspace{1cm}1i.1. User selects go back.
 				\item[3i.] User cannot find the specific alert rule. \\
 				\hspace{1cm}3i.1. User uses the search/filter bar to locate the rule by ID or name.
-				\item[4i.] User enters an invalid metric or configuration. \\
-				\hspace{1cm}4i.1. System highlights the input box in red. \\
-				\hspace{1cm}4i.2. System prevents user from proceeding until the error is corrected.
-				\item[6i.] User cancels the edit. \\
-				\hspace{1cm}6i.1. User clicks "Cancel." \\
-				\hspace{1cm}6i.2. System discards all unsaved modifications and returns the user to the "Manage Alert Rules" list.
-				\item[7i.] Administrator does not approve the alert. \\
-				\hspace{1cm}7i.1. Feedback box appears and admin gives feedback on alert.
-				\item[8i.] System fails to update the Alert. \\
-				\hspace{1cm}8i.1. System displays a "Error" message. \\
-				\hspace{1cm}8i.2. System provides an option to contact the Administrator.
+				\item[3ii.] User enters an invalid metric or configuration. \\
+				\hspace{1cm}3ii.1. System highlights the input box in red. \\
+				\hspace{1cm}3ii.2. System prevents user from proceeding until the error is corrected.
+				\item[3iii.] User cancels the edit. \\
+				\hspace{1cm}3iii.1. User clicks "Cancel." \\
+				\hspace{1cm}3iii.2. System discards all unsaved modifications and returns the user to the "Manage Alert Rules" list.
+				\item[4i.] Administrator does not approve the alert. \\
+				\hspace{1cm}4i.1. Feedback box appears and admin gives feedback on alert. \\
+				\hspace{1cm}4i.2. Sends feedback back to operator.
+				\item[5i.] System fails to update the Alert. \\
+				\hspace{1cm}5i.1. System displays a "Error" message. \\
+				\hspace{1cm}5i.2. System provides an option to contact the Administrator.
 			\end{itemize}
 		\item Public User \\
 			N/A
@@ -550,11 +547,11 @@ The business events identified for the project are as follows:
 			N/A
 		\item Supply Chain
 			\begin{itemize}
-				\item[9i.] Reviews the audit log to ensure alert modifications align with current city safety protocols.
+				\item[6i.] Reviews the audit log to ensure alert modifications align with current city safety protocols.
 			\end{itemize}
 		\item Legal
 			\begin{itemize}
-				\item[5i.] If an alert has been edited to be a public-facing alert, the system checks if the alert is permitted within the law.
+				\item[3i.] If an alert has been edited to be a public-facing alert, the system checks if the alert is permitted within the law.
 			\end{itemize}
 		\end{enumerate}
 		{\bf Global Scenario:}
@@ -565,11 +562,8 @@ The business events identified for the project are as follows:
 		\begin{enumerate}[1.]
 			\item User selects "Manage Alerts" section.
 			\item System fetches and displays a list of currently active and inactive alert rules.
-			\item User selects an alert rule to modify.
-			\item User edits relevant environmental metrics, geographic area, threshold value(s) and timeframe for chosen alert.
-			\item User chooses whether to keep current visibility or change alert visibility, public facing vs internal.
-			\item User reviews the summary and sends to administrator for approval.
-			\item Once approved the system checks if the alert is valid and saves to database.
+			{\color{red}\item User selects an alert rule to modify, edits relevant environmental metrics, geographic area, threshold value(s) and timeframe, chooses whether to keep or change the alert visibility, and sends it to the administrator for approval.}
+			{\color{red}\item Administrator approves the alert, the system checks if the alert is valid and saves to database.}
 			\item System displays a success message indicating the rule has been updated.
 			\item System logs the changes to Audit log.
 		\end{enumerate}
@@ -579,17 +573,18 @@ The business events identified for the project are as follows:
 			\hspace{1cm}1i.1. User selects go back.
 			\item[3i.] User cannot find the specific alert rule. \\
 			\hspace{1cm}3i.1. User uses the search/filter bar to locate the rule by ID or name.
-			\item[4i.] User enters an invalid metric or configuration. \\
-			\hspace{1cm}4i.1. System highlights the input box in red. \\
-			\hspace{1cm}4i.2. System prevents user from proceeding until the error is corrected.
-			\item[6i.] User cancels the edit. \\
-			\hspace{1cm}6i.1. User clicks "Cancel." \\
-			\hspace{1cm}6i.2. System discards all unsaved modifications and returns the user to the "Manage Alert Rules" list.
-			\item[7i.] Administrator does not approve the alert. \\
-			\hspace{1cm}7i.1. Feedback box appears and admin gives feedback on alert.
-			\item[8i.] System fails to update the Alert. \\
-			\hspace{1cm}8i.1. System displays a "Error" message. \\
-			\hspace{1cm}8i.2. System provides an option to contact the Administrator.
+			\item[3ii.] User enters an invalid metric or configuration. \\
+			\hspace{1cm}3ii.1. System highlights the input box in red. \\
+			\hspace{1cm}3ii.2. System prevents user from proceeding until the error is corrected.
+			\item[3iii.] User cancels the edit. \\
+			\hspace{1cm}3iii.1. User clicks "Cancel." \\
+			\hspace{1cm}3iii.2. System discards all unsaved modifications and returns the user to the "Manage Alert Rules" list.
+			\item[4i.] Administrator does not approve the alert. \\
+			\hspace{1cm}4i.1. Feedback box appears and admin gives feedback on alert. \\
+			\hspace{1cm}4i.2. Sends feedback back to operator.
+			\item[5i.] System fails to update the Alert. \\
+			\hspace{1cm}5i.1. System displays a "Error" message. \\
+			\hspace{1cm}5i.2. System provides an option to contact the Administrator.
 		\end{itemize}
 
 
