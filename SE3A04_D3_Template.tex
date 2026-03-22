@@ -13,6 +13,9 @@
 \usepackage{float}
 \usepackage{extarrows}
 \usepackage{setspace}
+\usepackage{float}
+\usepackage{array}
+\usepackage{tabularx}
 %------------------------------------------------------------------------------
 
 % Header and Footer
@@ -34,79 +37,11 @@
 \begin{document}
 
 \maketitle	
+\noindent{\bf Tutorial Number:} T01\\
+{\bf Group Number:} G4 \\
+{\bf Group Members:} Lukas Buehlmann, David Olejniczak,Vanessa Lai, Saqib Khan, Suzanne Abdullah
 
-\section{Introduction}
-\label{sec:introduction}
-% Begin Section
 
-This section should provide an brief overview of the entire document.
-
-\subsection{Purpose}
-\label{sub:purpose}
-% Begin SubSection
-\begin{enumerate}[a)]
-	\item Delineate the purpose of the document
-	\item Specify the intended audience for the document
-\end{enumerate}
-% End SubSection
-
-\subsection{System Description}
-\label{sub:system_description}
-% Begin SubSection
-\begin{enumerate}[a)]
-	\item Give a brief description of the system. This could be a paragraph or two to give some context to this document.
-\end{enumerate}
-% End SubSection
-
-\subsection{Overview}
-\label{sub:overview}
-% Begin SubSection
-\begin{enumerate}[a)]
-	\item Describe what the rest of the document contains 
-	\item Explain how the document is organised
-\end{enumerate}
-
-% End SubSection
-
-% End Section
-
-\section{State Charts for Controller Classes}
-\label{sec:state_charts_for_controller_classes}
-% Begin Section
-This section should provide a state chart for each controller class for your application.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.75\textwidth]{imagesD3/State City Controller.png}
-\caption{City Controller State Diagram}
-\end{figure}
-% End Section
-
-\section{Sequence Diagrams}
-\label{sec:sequence_diagrams}
-% Begin Section
-This section should provide a sequence diagram for each use case of your application.
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.75\textwidth]{imagesD3/BE4 Sequence Diagram.png}
-\caption{View Dashboard Sequence Diagram}
-\end{figure}
-% End Section
-
-\section{Detailed Class Diagram}
-\label{sec:detailed_class_diagram}
-% Begin Section
-This section should provide a detailed class diagram for your application.
-% End Section
-
-\appendix
-\section{Division of Labour}
-\label{sec:division_of_labour}
-% Begin Section
-Include a Division of Labour sheet which indicates the contributions of each team member. This sheet must be signed by all team members.
-% End Section
-
-\newpage
 \section*{IMPORTANT NOTES}
 \begin{itemize}
 	\item You do \underline{NOT} need to provide a text explanation of each diagram; the diagram should speak for itself
@@ -125,6 +60,113 @@ Include a Division of Labour sheet which indicates the contributions of each tea
 	\end{itemize}
 	\item If you do \underline{NOT} have a Division of Labour sheet, your deliverable will \underline{NOT} be marked
 \end{itemize}
+\newpage
+
+\section{Introduction}
+\label{sec:introduction}
+% Begin Section
+
+\subsection{Purpose}
+\label{sub:purpose}
+% Begin SubSection
+\begin{enumerate}[a)]
+	\item Delineate the purpose of the document
+	\item Specify the intended audience for the document
+
+\end{enumerate}
+% End SubSection
+
+\subsection{System Description}
+\label{sub:system_description}
+% Begin SubSection
+	 This system will monitor real-time sensor data input from across a city to measure environmental changes. The system will be primarily used by city operators who have access to a dashboard which shows recent data aggregated over time as well as environmental alerts. The management of alerts and accounts is done by administrators who have greater permissions than other users. The system will also expose a REST API for public users which only exposes non-sensitive environmental data aggregated by city zone. The system will also have an app for public users to easily view data from the API. All major actions are logged for audit purposes and the system implements rate-limiting to prevent denial-of-service attacks and to maintain high uptime. 
+% End SubSection
+
+\subsection{Overview}
+\label{sub:overview}
+% Begin SubSection
+	This document is organized into an introduction followed by sections for various types of charts used to describe the structure and behaviour of the system. Each section will be focused on a different type of diagram. Section 2 contains State Charts for each of the controller classes. Section 3 contains Sequence Diagrams representing each use case of the system. Section 4 contains a detailed Class Diagram for the system. 
+
+% End SubSection
+
+% End Section
+
+\section{State Charts for Controller Classes}
+\label{sec:state_charts_for_controller_classes}
+% Begin Section
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{ImagesD3/StateProcessingofSensorData.png}
+    \caption{\textbf{Processing of Sensor Data State Diagram}}
+    \label{fig:Processing of Sensor Data State Diagram}
+\end{figure}
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{imagesD3/State City Controller.png}
+\caption{City Controller State Diagram}
+\end{figure}
+% End Section
+
+\section{Sequence Diagrams}
+\label{sec:sequence_diagrams}
+% Begin Section
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{ImagesD3/BE1.png}
+    \caption{\textbf{Creating an Alert Rule}}
+    \label{fig:Creating an Alert Rule}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{imagesD3/BE4 Sequence Diagram.png}
+\caption{View Dashboard Sequence Diagram}
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{ImagesD3/BE5.png}
+    \caption{\textbf{Public API Request to Access Data}}
+    \label{fig:BE5 Public API Request to Access Data}
+\end{figure}
+
+
+% End Section
+
+\section{Detailed Class Diagram}
+\label{sec:detailed_class_diagram}
+% Begin Section
+
+% End Section
+
+\appendix
+\section{Division of Labour}
+\label{sec:division_of_labour}
+% Begin Section
+This sheet indicates the contributions of each team member and is signed by all team members. \newline
+
+\noindent
+Olejniczak, David
+\begin{itemize}
+\item Section 2, Created the Processing of Sensor Data State Diagram
+\item Section 3, Created the sequence diagram for BE1 
+\item Section 3, Created the sequence diagram for BE5 
+\item Section 4, Helped creating the Class Diagram
+\item Helped write format the LaTeX document
+
+\end{itemize}
+\includegraphics[width=0.3\textwidth]{images/David}
+
+
+
+% End Section
+
+
 
 
 \end{document}
