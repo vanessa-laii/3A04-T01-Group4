@@ -112,7 +112,7 @@ This document is intended for internal SCEHMAS stakeholders, including but not l
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{ImagesD3/State_Alert_Management.png}
+    \includegraphics[width=0.9\textwidth]{ImagesD3/State_Alert_Management.png}
     \caption{\textbf{Alert Management State Diagram}}
 \end{figure}
 
@@ -125,7 +125,7 @@ This document is intended for internal SCEHMAS stakeholders, including but not l
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{ImagesD3/StatePublicController.png}
+    \includegraphics[width=0.75\textwidth]{ImagesD3/State_Public_Controller.png}
     \caption{\textbf{Public Controller State Diagram}}
     \label{fig:Public Controller State Diagram}
 \end{figure}
@@ -187,13 +187,44 @@ This document is intended for internal SCEHMAS stakeholders, including but not l
 
 
 % End Section
-
+\newpage
 \section{Detailed Class Diagram}
 \label{sec:detailed_class_diagram}
 % Begin Section
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{ImagesD3/ClassDiagramFull.png}
+    \caption{\textbf{Class Diagram}}
+    \label{fig:Class Diagram}
+\end{figure}
+
+The enlarged Class Diagram can be seen more clearly in Figures 13.1 and 13.2
+
+\renewcommand{\thefigure}{13.\arabic{subfigurecount}}
+\newcounter{subfigurecount}
+
+\setcounter{subfigurecount}{1}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{ImagesD3/ClassDiagramLeft.png}
+    \caption{\textbf{Class Diagram Left Side}}
+    \label{fig:Class Diagram Left Side}
+\end{figure}
+
+\stepcounter{subfigurecount}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{ImagesD3/ClassDiagramRight.png}
+    \caption{\textbf{Class Diagram Right Side}}
+    \label{fig:Class Diagram Right Side}
+\end{figure}
 % End Section
 
+\renewcommand{\thefigure}{\arabic{figure}}
+\setcounter{figure}{13}
+
+\newpage
 \appendix
 \section{Division of Labour}
 \label{sec:division_of_labour}
@@ -243,6 +274,18 @@ Abdullah, Suzanne
 \item Helped write format the LaTeX document
 \end{itemize}
 \includegraphics[width=0.3\textwidth]{images/Suzanne}
+
+\noindent
+Buehlmann, Lukas
+\begin{itemize}
+\item Wrote section 1.2, 1.3
+\item Section 2: Alert Management State Diagram
+\item Section 3: BE3 Sequence Diagram
+\item Section 4: City and Public agents in the class diagram
+\item Edited and added missing diagrams to LaTeX document
+\end{itemize}
+\includegraphics[width=0.3\textwidth]{images/Lukas}
+
 
 
 % End Section
