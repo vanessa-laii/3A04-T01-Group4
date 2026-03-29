@@ -2,9 +2,21 @@ import { View, Text, StyleSheet, TextInput, Button, Alert, Platform} from 'react
 import React from 'react'
 import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
 
+function displayAlerts(){
+  var map = L.map('map').fitWorld();
+
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+  }).addTo(map);
+}
+
 const app = () => {
   return (
     <View style={styles.container}>
+
+      
+      
       <Text style={styles.titletext}>SCEMAS</Text>
       <Text style={styles.headertext}>Citizen City Alerts</Text>
       <Text style={styles.bodytext}>Enter your location</Text>
@@ -14,7 +26,7 @@ const app = () => {
             style={styles.input} 
             placeholder='City, State, Country'>
           </TextInput>
-                <Button title="start" color='#292732'>Start</Button>
+                <Button title="start" color="black" onPress={displayAlerts}>Start</Button>
         </SafeAreaView>
       </SafeAreaProvider>
 
@@ -78,5 +90,9 @@ const styles = StyleSheet.create({
     borderCurve: 'circular',
     borderRadius: 15,
     fontSize: 16,
+  },
+  map:{
+    height: '100%',
+    width: 100,
   }
 })
