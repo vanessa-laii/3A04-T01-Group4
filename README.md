@@ -3,4 +3,6 @@
 
 [Webapp](Webapp/) folder contains the working app for this project. 
 
+[Mobileapp](Mobileapp/) folder contains the working mobile creative feature for this project.
+
 [Deliverables](Deliverables/) folder contains the LateX files for deliverable 1, 2, and 3. These deliverables showcase the system design and architecture. 
