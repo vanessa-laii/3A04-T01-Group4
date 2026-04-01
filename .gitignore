@@ -6,3 +6,4 @@
 *:Zone.Identifier
 *.out
 *.pdf
+.vscode/*
