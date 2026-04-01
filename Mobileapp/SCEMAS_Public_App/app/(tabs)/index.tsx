@@ -1,14 +1,10 @@
 import { View, Text, StyleSheet, TextInput, Button, Alert, Platform} from 'react-native'
 import React from 'react'
 import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 
 function displayAlerts(){
-  var map = L.map('map').fitWorld();
-
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap'
-  }).addTo(map);
+  router.push('/(tabs)/Map');
 }
 
 const app = () => {
@@ -26,7 +22,7 @@ const app = () => {
             style={styles.input} 
             placeholder='City, State, Country'>
           </TextInput>
-                <Button title="start" color="black" onPress={displayAlerts}>Start</Button>
+          <Button title="Start" color="black" onPress={displayAlerts} />
         </SafeAreaView>
       </SafeAreaProvider>
 
