@@ -1,3 +1,17 @@
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Node
+node_modules/
+dist/
+.DS_Store
+
+# Logs
+*.log
+
 *.aux
 *.fdb_latexmk
 *.fls
