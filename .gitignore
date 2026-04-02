@@ -11,3 +11,13 @@ dist/
 
 # Logs
 *.log
+
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.synctex.gz
+*:Zone.Identifier
+*.out
+*.pdf
+.vscode/*

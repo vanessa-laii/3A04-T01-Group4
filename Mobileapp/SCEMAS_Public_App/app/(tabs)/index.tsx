@@ -1,10 +1,18 @@
 import { View, Text, StyleSheet, TextInput, Button, Alert, Platform} from 'react-native'
 import React from 'react'
 import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+
+function displayAlerts(){
+  router.push('/(tabs)/Map');
+}
 
 const app = () => {
   return (
     <View style={styles.container}>
+
+      
+      
       <Text style={styles.titletext}>SCEMAS</Text>
       <Text style={styles.headertext}>Citizen City Alerts</Text>
       <Text style={styles.bodytext}>Enter your location</Text>
@@ -14,7 +22,7 @@ const app = () => {
             style={styles.input} 
             placeholder='City, State, Country'>
           </TextInput>
-                <Button title="start" color='#292732'>Start</Button>
+          <Button title="Start" color="black" onPress={displayAlerts} />
         </SafeAreaView>
       </SafeAreaProvider>
 
@@ -78,5 +86,9 @@ const styles = StyleSheet.create({
     borderCurve: 'circular',
     borderRadius: 15,
     fontSize: 16,
+  },
+  map:{
+    height: '100%',
+    width: 100,
   }
 })
