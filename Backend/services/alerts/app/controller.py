@@ -19,6 +19,11 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from app.orm_models import AccountInfoORM, AuditLogORM
+
+
 import httpx
 
 from app.abstraction import AlertsAbstraction
@@ -211,11 +216,12 @@ class CityAlertManagement(AlertManagement):
       - httpx.AsyncClient         (for forwarding to the City agent)
     """
 
-    def __init__(self, city_service_url: str):
+    def __init__(self, city_service_url: str, session: AsyncSession):
         self._city_url = city_service_url
         self._database = ConfiguredAlertsDatabase()
         self._abstraction = AlertsAbstraction()
         self._http_client: Optional[httpx.AsyncClient] = None
+        self._session = session
 
     # -----------------------------------------------------------------------
     # Lifecycle

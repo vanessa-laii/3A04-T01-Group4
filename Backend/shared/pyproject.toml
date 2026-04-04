@@ -1,0 +1,10 @@
+# shared/pyproject.toml
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "scemas-shared"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2.0"]

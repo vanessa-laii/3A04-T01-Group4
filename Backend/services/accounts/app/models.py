@@ -18,7 +18,7 @@ The hierarchy mirrors the UML directly:
 from __future__ import annotations
 
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Annotated
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -64,10 +64,10 @@ class AccountInfoSchema(BaseModel):
     Represents the AccountInfo object stored and retrieved by AccountDatabase.
     Passwords are never returned in responses — only accepted in requests.
     """
-    userId: str = Field(..., example="user-001")
-    phoneNum: str = Field(..., example="+1-416-555-0100")
-    email: EmailStr = Field(..., example="operator@scemas.city")
-    role: UserRole = Field(..., example=UserRole.CITY_OPERATOR)
+    userId: Annotated[str, Field(example="user-001")]
+    phoneNum: Annotated[str, Field(example="+1-416-555-0100")]
+    email: Annotated[EmailStr, Field(example="operator@scemas.city")]
+    role: Annotated[UserRole, Field(example=UserRole.CITY_OPERATOR)]
 
 
 class AccountInfoResponse(AccountInfoSchema):
@@ -84,14 +84,13 @@ class AuditInformationSchema(BaseModel):
     Mirrors the UML AuditInformation class.
     Represents one auditable event associated with a user account.
     """
-    userId: str = Field(..., example="user-001")
+    userId: Annotated[str, Field(example="user-001")]
     EventType: AuditEventType
-    EventDesc: str = Field(..., example="User logged in successfully.")
-    EventDate: int = Field(
-        ...,
+    EventDesc: Annotated[str, Field(example="User logged in successfully.")]
+    EventDate: Annotated[int, Field(
         description="Unix timestamp (seconds since epoch).",
-        example=1748736000,
-    )
+        example=1748736000
+    )]
 
 
 # ---------------------------------------------------------------------------
@@ -99,8 +98,8 @@ class AuditInformationSchema(BaseModel):
 # ---------------------------------------------------------------------------
 
 class LoginRequest(BaseModel):
-    userId: str = Field(..., example="user-001")
-    password: str = Field(..., min_length=8, example="SecurePass123!")
+    userId: Annotated[str, Field(example="user-001")]
+    password: Annotated[str, Field(min_length=8, example="SecurePass123!")]
 
 
 class LoginResponse(BaseModel):
@@ -117,11 +116,11 @@ class LoginResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 class CreateAccountRequest(BaseModel):
-    userId: str = Field(..., example="user-002")
-    password: str = Field(..., min_length=8, example="SecurePass123!")
-    email: EmailStr = Field(..., example="newuser@scemas.city")
-    phone_num: str = Field(..., example="+1-416-555-0101")
-    role: UserRole = Field(..., example=UserRole.ANALYST)
+    userId: Annotated[str, Field(example="user-002")]
+    password: Annotated[str, Field(min_length=8, example="SecurePass123!")]
+    email: Annotated[EmailStr, Field(example="newuser@scemas.city")]
+    phone_num: Annotated[str, Field(example="+1-416-555-0101")]
+    role: Annotated[UserRole, Field(example=UserRole.ANALYST)]
 
 
 class CreateAccountResponse(BaseModel):
@@ -177,16 +176,15 @@ class PageDisplaySchema(BaseModel):
     Maps to whichever concrete class (LoginPage, CreateProfilePage,
     AccountError, AccountSuccess) is appropriate for the operation.
     """
-    page_type: str = Field(
-        ...,
+    page_type: Annotated[str, Field(
         description=(
             "Which concrete presentation class is active: "
             "'login_page', 'create_profile_page', 'account_error', 'account_success'."
         ),
-        example="account_success",
-    )
+        example="account_success"
+    )]
     message_type: PageMessageType
-    message: str = Field(..., example="Account created successfully.")
+    message: Annotated[str, Field(example="Account created successfully.")]
 
 
 # ---------------------------------------------------------------------------

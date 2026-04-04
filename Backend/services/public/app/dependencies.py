@@ -9,23 +9,22 @@ lru_cache and injected into route handlers with Depends().
 from __future__ import annotations
 
 import os
-from functools import lru_cache
 
 from app.controller import PublicController
+
+from app.database import get_db  # re-export so routes can import from one place
+
+from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Depends
 
 
 def _get_env(key: str, default: str) -> str:
     return os.getenv(key, default)
 
-
-@lru_cache(maxsize=1)
-def get_public_controller() -> PublicController:
-    """
-    Construct and return the singleton PublicController.
-
-    Expected environment variables (set in .env / docker-compose.yml):
-        CITY_SERVICE_URL    e.g. http://city:8000
-    """
+async def get_account_management_controller(
+    session: AsyncSession = Depends(get_db),
+) -> PublicController:
     return PublicController(
         city_service_url=_get_env("CITY_SERVICE_URL", "http://localhost:8001"),
+        session=session,
     )

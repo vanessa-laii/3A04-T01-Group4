@@ -26,6 +26,11 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from app.orm_models import AccountInfoORM, AuditLogORM
+
+
 import httpx
 
 from app.abstraction import DataAbstraction
@@ -201,7 +206,7 @@ class DataProcessingController:
     up to date so that status / query routes always have fresh data.
     """
 
-    def __init__(self, city_service_url: str):
+    def __init__(self, city_service_url: str, session: AsyncSession):
         self._city_url = city_service_url
 
         # PAC layers

@@ -1,35 +1,105 @@
+# SCEMAS — docker-compose.yml
+# Orchestrates all five microservice agents and the shared database.
+#
+# The shared/ package is bind-mounted into every service container so
+# that a single copy of the code is used at runtime. Any edit to a file
+# in Backend/shared/ is immediately reflected in all running containers
+# without a rebuild.
+
 services:
+
+  # ---------------------------------------------------------------------------
+  # City Agent
+  # ---------------------------------------------------------------------------
   city:
     build: ./services/city
-    ports: ["8001:8000"]
-    env_file: [.env, ./services/city/.env.local]
-    depends_on: [db]
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env
+      - ./services/city/.env.local
+    volumes:
+      - ./shared:/app/shared          # mount shared package into container
+    depends_on:
+      - db
+    restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
+  # Public Agent
+  # ---------------------------------------------------------------------------
   public:
     build: ./services/public
-    ports: ["8002:8000"]
-    env_file: [.env, ./services/public/.env.local]
+    ports:
+      - "8002:8000"
+    env_file:
+      - .env
+      - ./services/public/.env.local
+    volumes:
+      - ./shared:/app/shared
+    depends_on:
+      - db
+    restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
+  # Data Processing Agent
+  # ---------------------------------------------------------------------------
   data_processing:
     build: ./services/data_processing
-    ports: ["8003:8000"]
-    env_file: [.env]
+    ports:
+      - "8003:8000"
+    env_file:
+      - .env
+      - ./services/data_processing/.env.local
+    volumes:
+      - ./shared:/app/shared
+    depends_on:
+      - db
+    restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
+  # Alerts Agent
+  # ---------------------------------------------------------------------------
   alerts:
     build: ./services/alerts
-    ports: ["8004:8000"]
-    env_file: [.env]
+    ports:
+      - "8004:8000"
+    env_file:
+      - .env
+      - ./services/alerts/.env.local
+    volumes:
+      - ./shared:/app/shared
+    depends_on:
+      - db
+    restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
+  # Accounts Agent
+  # ---------------------------------------------------------------------------
   accounts:
     build: ./services/accounts
-    ports: ["8005:8000"]
-    env_file: [.env]
+    ports:
+      - "8005:8000"
+    env_file:
+      - .env
+      - ./services/accounts/.env.local
+    volumes:
+      - ./shared:/app/shared
+    depends_on:
+      - db
+    restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
+  # PostgreSQL database
+  # ---------------------------------------------------------------------------
   db:
     image: postgres:15
-    env_file: [.env]
+    env_file:
+      - .env
     volumes:
       - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"       # expose locally for DB tools (remove in production)
+    restart: unless-stopped
 
 volumes:
   pgdata:

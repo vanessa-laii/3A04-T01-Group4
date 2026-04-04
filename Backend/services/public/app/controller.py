@@ -20,6 +20,11 @@ from __future__ import annotations
 import logging
 from typing import Dict, List, Optional
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from app.orm_models import AccountInfoORM, AuditLogORM
+
+
 import httpx
 
 from app.abstraction import PublicAbstraction
@@ -92,7 +97,7 @@ class PublicController:
     by the City / Alerts agents upstream.
     """
 
-    def __init__(self, city_service_url: str):
+    def __init__(self, city_service_url: str, session: AsyncSession):
         self._city_url = city_service_url
 
         # Abstraction layer — single instance, owned by the controller

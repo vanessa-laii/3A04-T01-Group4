@@ -30,6 +30,10 @@ import time
 import uuid
 from typing import Dict, List, Optional
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from app.orm_models import AccountInfoORM, AuditLogORM
+
 from app.abstraction import AccountsAbstraction
 from app.models import (
     AccountDatabaseUpdateRequest,
@@ -61,69 +65,48 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 class AccountDatabase:
-    """
-    UML: AccountDatabase
-      - accountInfo: AccountInfo
-      - userId: String
-      + retrieveAccountInfo(): AccountInfo
-      + updateAccountInfo(): boolean
-    """
+    def __init__(self, session: AsyncSession):
+        self._session = session          # injected, not created here
 
-    def __init__(self):
-        # In-memory store: userId -> {hashed_password, AccountInfoSchema}
-        # TODO: replace with async DB session
-        self._store: Dict[str, Dict] = {}
-
-    async def retrieve_account_info(
-        self, user_id: str
-    ) -> Optional[AccountInfoSchema]:
-        record = self._store.get(user_id)
-        if record is None:
+    async def retrieve_account_info(self, user_id: str):
+        result = await self._session.execute(
+            select(AccountInfoORM).where(AccountInfoORM.userId == user_id)
+        )
+        row = result.scalar_one_or_none()
+        if row is None:
             return None
-        return AccountInfoSchema(**record["info"])
+        return AccountInfoSchema(
+            userId=row.userId, email=row.email,
+            phoneNum=row.phoneNum, role=row.role
+        )
 
-    async def update_account_info(
-        self, request: AccountDatabaseUpdateRequest
-    ) -> bool:
-        """
-        Partially update an existing account record.
-        Returns True on success, False if the userId does not exist.
-        """
-        record = self._store.get(request.userId)
-        if record is None:
+    async def update_account_info(self, request):
+        result = await self._session.execute(
+            select(AccountInfoORM).where(AccountInfoORM.userId == request.userId)
+        )
+        row = result.scalar_one_or_none()
+        if row is None:
             return False
-
-        if request.password:
-            record["hashed_password"] = _hash_password(request.password)
-        if request.email:
-            record["info"]["email"] = request.email
-        if request.phone_num:
-            record["info"]["phoneNum"] = request.phone_num
-
-        logger.info("AccountInfo updated for userId='%s'.", request.userId)
+        if request.email:    row.email    = request.email
+        if request.phone_num: row.phoneNum = request.phone_num
+        if request.password: row.password = _hash_password(request.password)
+        await self._session.commit()
         return True
 
-    async def create_record(
-        self, info: AccountInfoSchema, hashed_password: str
-    ) -> bool:
-        if info.userId in self._store:
-            return False
-        self._store[info.userId] = {
-            "hashed_password": hashed_password,
-            "info": info.model_dump(),
-        }
-        logger.info("Account created for userId='%s'.", info.userId)
+    async def create_record(self, info, hashed_password: str) -> bool:
+        self._session.add(AccountInfoORM(
+            userId=info.userId, password=hashed_password,
+            phoneNum=info.phoneNum, email=info.email, role=info.role
+        ))
+        await self._session.commit()
         return True
 
     async def verify_credentials(self, user_id: str, password: str) -> bool:
-        record = self._store.get(user_id)
-        if record is None:
-            return False
-        return record["hashed_password"] == _hash_password(password)
-
-    async def user_exists(self, user_id: str) -> bool:
-        return user_id in self._store
-
+        result = await self._session.execute(
+            select(AccountInfoORM).where(AccountInfoORM.userId == user_id)
+        )
+        row = result.scalar_one_or_none()
+        return row is not None and row.password == _hash_password(password)
 
 # ---------------------------------------------------------------------------
 # AuditLogData
@@ -131,38 +114,29 @@ class AccountDatabase:
 # ---------------------------------------------------------------------------
 
 class AuditLogData:
-    """
-    UML: AuditLogData
-      - auditInfo: AuditInformation
-      + getAuditInformation(): AuditInformation
-      + updateAuditInformation(Info): void
-    """
-
-    def __init__(self):
-        # In-memory list — replace with async DB writes in production
-        self._log: List[AuditInformationSchema] = []
-
-    def get_audit_information(
-        self,
-        user_id: Optional[str] = None,
-        limit: int = 100,
-    ) -> List[AuditInformationSchema]:
-        events = self._log
-        if user_id:
-            events = [e for e in events if e.userId == user_id]
-        return events[-limit:]
+    def __init__(self, session: AsyncSession):
+        self._session = session
 
     def update_audit_information(self, info: AuditInformationSchema) -> None:
-        """
-        Append a new AuditInformation record.
-        TODO: persist to DB (append-only audit table).
-        """
-        self._log.append(info)
-        logger.info(
-            "Audit event recorded: userId=%s type=%s",
-            info.userId,
-            info.EventType,
-        )
+        # Fire-and-forget append — use asyncio.create_task in production
+        self._session.add(AuditLogORM(
+            userId=info.userId, EventType=info.EventType.value,
+            EventDesc=info.EventDesc, EventDate=info.EventDate
+        ))
+        # Note: commit happens at end of request via session lifecycle
+
+    async def get_audit_information(self, user_id=None, limit=100):
+        q = select(AuditLogORM).order_by(AuditLogORM.EventDate.desc()).limit(limit)
+        if user_id:
+            q = q.where(AuditLogORM.userId == user_id)
+        result = await self._session.execute(q)
+        return [
+            AuditInformationSchema(
+                userId=r.userId, EventType=r.EventType,
+                EventDesc=r.EventDesc, EventDate=r.EventDate
+            )
+            for r in result.scalars()
+        ]
 
 
 # ---------------------------------------------------------------------------
@@ -307,10 +281,14 @@ class AccountManagementController:
       - accountLog:     AuditLogData
     """
 
-    def __init__(self):
+    def __init__(self, session: AsyncSession):
         # Shared persistence components
-        self._account_db = AccountDatabase()
-        self._audit_log = AuditLogData()
+        self._account_db = AccountDatabase(session)
+        self._audit_log = AuditLogData(session)
+
+        self._account_db   = AccountDatabase(session)
+        self._audit_log    = AuditLogData(session)
+        self._account_login  = AccountLogin(self._account_db, self._audit_log)
 
         # Operation classes
         self._account_login = AccountLogin(self._account_db, self._audit_log)

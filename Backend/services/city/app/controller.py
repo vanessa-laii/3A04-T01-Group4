@@ -16,6 +16,11 @@ from __future__ import annotations
 import logging
 from typing import List, Optional
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from app.orm_models import AccountInfoORM, AuditLogORM
+
+
 import httpx
 
 from app.models import (
@@ -108,6 +113,7 @@ class CityController:
         data_processing_service_url: str,
         alerts_service_url: str,
         public_service_url: str,
+        session: AsyncSession,
     ):
         # Sub-agent service URLs
         self._accounts_url = accounts_service_url
