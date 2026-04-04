@@ -4,25 +4,31 @@ import {
   BellRing,
   RadioTower,
   ScrollText,
-  Settings,
+  UserCircle,
+  Users,
   type LucideIcon,
 } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
 
 interface NavItem {
   label: string
   path: string
   Icon: LucideIcon
+  adminOnly?: boolean
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard', path: '/dashboard', Icon: LayoutDashboard },
-  { label: 'Alerts',    path: '/alerts',    Icon: BellRing },
-  { label: 'Sensors',   path: '/sensors',   Icon: RadioTower },
-  { label: 'Audit Log', path: '/logs',      Icon: ScrollText },
-  { label: 'Settings',  path: '/settings',  Icon: Settings },
+  { label: 'Dashboard', path: '/dashboard',      Icon: LayoutDashboard },
+  { label: 'Alerts',    path: '/alerts',          Icon: BellRing },
+  { label: 'Sensors',   path: '/sensors',         Icon: RadioTower },
+  { label: 'Audit Log', path: '/logs',            Icon: ScrollText },
+  { label: 'Accounts',  path: '/admin/accounts',  Icon: Users, adminOnly: true },
+  { label: 'Profile',   path: '/profile',          Icon: UserCircle },
 ]
 
 export default function Sidebar() {
+  const { role } = useAuth()
+
   return (
     <aside className="w-52 shrink-0 bg-zinc-900 border-r border-zinc-800 flex flex-col h-full">
       {/* Logo */}
@@ -38,7 +44,7 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 py-3">
-        {navItems.map(({ label, path, Icon }) => (
+        {navItems.filter(item => !item.adminOnly || role === 'System Administrator').map(({ label, path, Icon }) => (
           <NavLink
             key={path}
             to={path}

@@ -1,5 +1,6 @@
 import { LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
 
 interface HeaderProps {
   title: string
@@ -7,12 +8,10 @@ interface HeaderProps {
 
 export default function Header({ title }: HeaderProps) {
   const navigate = useNavigate()
+  const { profile, role, signOut } = useAuth()
 
-  const raw = sessionStorage.getItem('scemas_user')
-  const user = raw ? JSON.parse(raw) as { email: string; role: string } : null
-
-  function handleSignOut() {
-    sessionStorage.removeItem('scemas_user')
+  async function handleSignOut() {
+    await signOut()
     navigate('/login')
   }
 
@@ -35,17 +34,17 @@ export default function Header({ title }: HeaderProps) {
           })}
         </span>
 
-        {user && (
+        {profile && (
           <>
             <span className="text-zinc-400 text-xs font-medium" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              {user.email.split('@')[0]}
+              {profile.username}
             </span>
             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-sm tracking-widest ${
-              user.role === 'admin'
+              role === 'System Administrator'
                 ? 'bg-white/10 text-white border border-white/20'
                 : 'bg-zinc-700 text-zinc-300 border border-zinc-600'
             }`}>
-              {user.role.toUpperCase()}
+              {role === 'System Administrator' ? 'ADMIN' : 'OPERATOR'}
             </span>
           </>
         )}
