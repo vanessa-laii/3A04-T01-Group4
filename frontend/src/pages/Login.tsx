@@ -1,41 +1,32 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lock, Mail, Eye, EyeOff, ShieldCheck } from 'lucide-react'
-
-// Fake credentials — replace with real Supabase auth later
-const FAKE_USERS = [
-  { email: 'admin@scemas.ca',    password: 'admin123',    role: 'admin' },
-  { email: 'operator@scemas.ca', password: 'operator123', role: 'operator' },
-]
+import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
   const navigate = useNavigate()
+  const { signIn } = useAuth()
+
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError('')
     setLoading(true)
 
-    setTimeout(() => {
-      const match = FAKE_USERS.find(
-        (u) => u.email === email.trim().toLowerCase() && u.password === password,
-      )
+    const { error: authError } = await signIn(email.trim().toLowerCase(), password)
 
-      if (!match) {
-        setError('Invalid email or password.')
-        setLoading(false)
-        return
-      }
+    if (authError) {
+      setError(authError)
+      setLoading(false)
+      return
+    }
 
-      // Store fake session in sessionStorage
-      sessionStorage.setItem('scemas_user', JSON.stringify({ email: match.email, role: match.role }))
-      navigate('/dashboard')
-    }, 600)
+    navigate('/dashboard')
   }
 
   return (
@@ -55,7 +46,6 @@ export default function Login() {
 
       {/* Card */}
       <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-sm p-8">
-        {/* Header */}
         <div className="flex items-center gap-2 mb-6">
           <ShieldCheck size={18} strokeWidth={1.8} className="text-zinc-400" />
           <span
@@ -73,11 +63,7 @@ export default function Login() {
               Email
             </label>
             <div className="relative">
-              <Mail
-                size={14}
-                strokeWidth={1.8}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none"
-              />
+              <Mail size={14} strokeWidth={1.8} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
               <input
                 type="email"
                 required
@@ -95,11 +81,7 @@ export default function Login() {
               Password
             </label>
             <div className="relative">
-              <Lock
-                size={14}
-                strokeWidth={1.8}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none"
-              />
+              <Lock size={14} strokeWidth={1.8} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
               <input
                 type={showPass ? 'text' : 'password'}
                 required
@@ -113,10 +95,7 @@ export default function Login() {
                 onClick={() => setShowPass((v) => !v)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
               >
-                {showPass
-                  ? <EyeOff size={14} strokeWidth={1.8} />
-                  : <Eye size={14} strokeWidth={1.8} />
-                }
+                {showPass ? <EyeOff size={14} strokeWidth={1.8} /> : <Eye size={14} strokeWidth={1.8} />}
               </button>
             </div>
           </div>
@@ -142,12 +121,6 @@ export default function Login() {
         <p className="text-zinc-600 text-xs text-center mt-6">
           Access restricted to authorized personnel only.
         </p>
-      </div>
-
-      {/* Dev hint */}
-      <div className="mt-6 text-zinc-700 text-xs text-center space-y-0.5">
-        <p>admin@scemas.ca / admin123</p>
-        <p>operator@scemas.ca / operator123</p>
       </div>
     </div>
   )
