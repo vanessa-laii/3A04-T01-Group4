@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, Button, Alert, Platform} from 'react-native'
+import { View, Text, StyleSheet, TextInput, Button, Alert, Platform, useColorScheme} from 'react-native'
 import React from 'react'
 import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -10,37 +10,54 @@ function displayAlerts(){
 }
 
 const app = () => {
-  const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    SpaceGrotesk_400Regular,
+    const colorScheme = useColorScheme();
+    const isDarkMode = colorScheme === 'dark';
+
+    const [fontsLoaded] = useFonts({
+        Inter_400Regular,
+        SpaceGrotesk_400Regular,
   });
   
+  const themeStyles = {
+      container: { backgroundColor: isDarkMode ? '#000000' : '#ededf1ff' },
+      text: { color: isDarkMode ? '#ffffff' : '#000000' },
+      input: { 
+          backgroundColor: isDarkMode ? '#27272a' : '#f4f4f5',
+          color: isDarkMode ? '#bdbbb6' : '#18181b',
+          borderColor: isDarkMode ? '#27272a' : '#e4e4e7'
+      },
+      startblock: {backgroundColor: isDarkMode ? '#d4d4d8': '#27272a'},
+      div: { backgroundColor: isDarkMode ? '#18181b' : '#fdfdfdff' }
+  };
+
   return (
     <SafeAreaProvider>
+        {/* 3. Apply the dynamic styles using an array [static, dynamic] */}
+        <View style={[styles.container, themeStyles.container]}>
+            <Text style={[styles.titletext, themeStyles.text]}>SCEMAS</Text>
+            <Text style={styles.headertext}>Citizen City Alerts</Text>
+            
+            <View style={[styles.div, themeStyles.div]} />
+            <View style={[styles.startblock, themeStyles.startblock]} />
+            
+            <Text style={[styles.bodytext, { color: isDarkMode ? '#d4d4d8' : '#71717a' }]}>
+                Enter your location
+            </Text>
+            
+            <TextInput 
+                style={[styles.input, themeStyles.input]} 
+                placeholder='City, State, Country'
+                placeholderTextColor={isDarkMode ? '#71717a' : '#a1a1aa'}
+            />
 
-    <View style={styles.container}>
-      <Text style={styles.titletext}>SCEMAS</Text>
-      <Text style={styles.headertext}>Citizen City Alerts</Text>
-
-      <View style={styles.div}>
+            <View style={{ position: 'absolute', top: 438, left: 70, width: 250 }}>
+                <Button 
+                    title="Start" 
+                    color={isDarkMode ? "#000000" : "#d4d4d8"} 
+                    onPress={displayAlerts} 
+                />
+            </View>
         </View>
-
-      <View style={styles.startblock}>
-        </View>
-        
-        <Text style={styles.bodytext}>Enter your location</Text>
-
-
-          <TextInput 
-            style={styles.input} 
-            placeholder='City, State, Country'>
-          </TextInput>
-          <Button title="Start" color="#000000" onPress={displayAlerts} />
-
-
-
-    </View>
-
     </SafeAreaProvider>
   )
 }
@@ -50,7 +67,7 @@ const styles = StyleSheet.create({
   div: {
     backgroundColor: '#18181b',
     width: '75%',
-    height: '23%',
+    height: '25%',
     marginTop: 320,
     marginLeft: 50,
     position: 'absolute',
@@ -73,7 +90,7 @@ const styles = StyleSheet.create({
     fontFamily: 'SpaceGrotesk_400Regular',
     marginTop: 140,
     color: '#ffffffff',
-    fontSize: 70,
+    fontSize: 71,
     fontWeight: '300',
     textAlign: 'center',
   },
@@ -87,7 +104,7 @@ const styles = StyleSheet.create({
   input:{    
     fontFamily: 'Inter_400Regular',
     justifyContent: 'center',
-    color: '#d8d6ceff',
+    color: '#bdbbb6ff',
     backgroundColor: '#27272a',
     height: 40,
     width: 250,
@@ -117,7 +134,7 @@ const styles = StyleSheet.create({
     borderColor: '#d4d4d8',
     fontSize: 16,
     position: 'absolute',
-    marginTop: 434,
+    marginTop: 442,
   },
   start:{    
     fontFamily: 'SpaceGrotesk_400Regular',

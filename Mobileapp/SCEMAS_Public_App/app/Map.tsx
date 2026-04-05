@@ -1,8 +1,8 @@
 import React from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE} from 'react-native-maps';
-import { useFonts, Inter_400Regular } from "@expo-google-fonts/inter";
-import { SpaceGrotesk_400Regular } from "@expo-google-fonts/space-grotesk";
+import { Platform, StyleSheet, View, Text, useColorScheme } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { useFonts, Inter_400Regular } from '@expo-google-fonts/inter';
+import { SpaceGrotesk_400Regular } from '@expo-google-fonts/space-grotesk';
 
 const INITIAL_REGION = {
   latitude: 43.2580,
@@ -12,66 +12,88 @@ const INITIAL_REGION = {
 };
 
 export default function MapScreen() {
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     SpaceGrotesk_400Regular,
   });
 
+  // 1. Data Generator Array
+  const markerData = [
+    {
+      id: 1,
+      title: 'PM2.5 above threshold',
+      description: 'Zone C - 41 ug/m',
+      lat: 43.2580,
+      lng: -79.9180
+    },
+    {
+      id: 2,
+      title: 'UV Index Critically High',
+      description: 'Zone A - 11.2 UV',
+      lat: 43.23,
+      lng: -79.880
+    },
+    {
+      id: 3,
+      title: 'Temperature Spike detected',
+      description: 'Zone B - 38.4 C',
+      lat: 43.25,
+      lng: -79.880
+    }
+  ];
+
+  const themeStyles = {
+        circle: { 
+            backgroundColor: isDarkMode ? '#d4d4d8' : '#71717a',
+            borderColor: isDarkMode? '#fff' : '#3f3f46'
+          }
+    };
+
+  if (!fontsLoaded) {
+    return null; // Or a loading component
+  }
+
   return (
-    <View style={{ flex:1, }}>
+    <View style={{ flex: 1 }}>
       <MapView
         style={StyleSheet.absoluteFill}
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
         initialRegion={INITIAL_REGION}
-        mapType='mutedStandard'
+        mapType="mutedStandard"
       >
-        <Marker
-          coordinate={{ latitude: INITIAL_REGION.latitude, longitude: INITIAL_REGION.longitude }}
-          title="PM2.5 above threshold"
-          description="Zone C - 41 ug/m"
-        >
-            
-          {/* Custom Marker View goes here */}
-          <View style={styles.markerWrapper}>
-            <View style={styles.circle} />
-          </View>
-        </Marker>
-
-        <Marker
-          coordinate={{ latitude: 43.23, longitude: -79.880 }}
-          title="UV Index Critically High"
-          description="Zone A - 11.2 UV"
-        >
-          {/* Custom Marker View goes here */}
-          <View style={styles.markerWrapper}>
-            <View style={styles.circle} />
-          </View>
-        </Marker>
-
-        <Marker
-          coordinate={{ latitude: 43.25, longitude: -79.880 }}
-          title="Temperature Spike detected"
-          description="Zone B - 38.4 C"
-        >
-          {/* Custom Marker View goes here */}
-          <View style={styles.markerWrapper}>
-            <View style={styles.circle} />
-          </View>
-        </Marker>
-
+        {/* 2. Marker Generator: Map through the array */}
+        {markerData.map((marker) => (
+          <Marker
+            key={marker.id} // Important for performance
+            coordinate={{ latitude: marker.lat, longitude: marker.lng }}
+            title={marker.title}
+            description={marker.description}
+          >
+            {/* Custom Marker View */}
+            <View style={styles.markerWrapper}>
+              <View style={[styles.circle, themeStyles.circle]} />
+            </View>
+          </Marker>
+        ))}
       </MapView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  alerts: {flex: 1, fontFamily: 'Inter_400Regular'},
-  markerWrapper: { alignItems: 'center', justifyContent: 'center', textAlign: 'center' },
-  circle: {
-    width: 17, height: 17,
-    borderRadius: 15,
-    backgroundColor: '#ffffffff',
-    borderWidth: 2, borderColor: '#fff'
+  markerWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  text: { color: '#fff', fontWeight: 'bold' }
+  circle: {
+    width: 17,
+    height: 17,
+    borderRadius: 15,
+    backgroundColor: '#d4d4d8', 
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
 });
