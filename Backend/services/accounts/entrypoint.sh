@@ -6,9 +6,10 @@
 # resolve `from shared import ...` imports, then starts the service.
 
 set -e
-
+echo "Upgrading build tools"
+pip install --upgrade pip setuptools wheel
 echo "Installing shared package from mounted volume..."
-pip install -e /app/shared --quiet
+pip install /app/shared --quiet
 
 echo "Starting service..."
 exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

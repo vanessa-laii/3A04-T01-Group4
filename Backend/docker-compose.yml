@@ -13,6 +13,9 @@ services:
   # ---------------------------------------------------------------------------
   city:
     build: ./services/city
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     ports:
       - "8001:8000"
     env_file:
@@ -20,8 +23,8 @@ services:
       # - ./services/city/.env.local
     volumes:
       - ./shared:/app/shared          # mount shared package into container
-    depends_on:
-      - db
+    # depends_on:
+    #   - db
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
@@ -29,6 +32,9 @@ services:
   # ---------------------------------------------------------------------------
   public:
     build: ./services/public
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     ports:
       - "8002:8000"
     env_file:
@@ -36,8 +42,8 @@ services:
       # - ./services/public/.env.local
     volumes:
       - ./shared:/app/shared
-    depends_on:
-      - db
+    # depends_on:
+    #   - db
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
@@ -45,6 +51,9 @@ services:
   # ---------------------------------------------------------------------------
   data_processing:
     build: ./services/data_processing
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     ports:
       - "8003:8000"
     env_file:
@@ -52,8 +61,8 @@ services:
       # - ./services/data_processing/.env.local
     volumes:
       - ./shared:/app/shared
-    depends_on:
-      - db
+    # depends_on:
+    #   - db
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
@@ -61,6 +70,9 @@ services:
   # ---------------------------------------------------------------------------
   alerts:
     build: ./services/alerts
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     ports:
       - "8004:8000"
     env_file:
@@ -68,8 +80,8 @@ services:
       # - ./services/alerts/.env.local
     volumes:
       - ./shared:/app/shared
-    depends_on:
-      - db
+    # depends_on:
+    #   - db
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
@@ -77,6 +89,9 @@ services:
   # ---------------------------------------------------------------------------
   accounts:
     build: ./services/accounts
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     ports:
       - "8005:8000"
     env_file:
@@ -84,22 +99,22 @@ services:
       # - ./services/accounts/.env.local
     volumes:
       - ./shared:/app/shared
-    depends_on:
-      - db
+    # depends_on:
+    #   - db
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
   # PostgreSQL database
   # ---------------------------------------------------------------------------
-  db:
-    image: postgres:15
-    env_file:
-      - .env
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"       # expose locally for DB tools (remove in production)
-    restart: unless-stopped
+#   db:
+#     image: postgres:15
+#     env_file:
+#       - .env
+#     volumes:
+#       - pgdata:/var/lib/postgresql/data
+#     ports:
+#       - "5432:5432"       # expose locally for DB tools (remove in production)
+#     restart: unless-stopped
 
-volumes:
-  pgdata:
+# volumes:
+#   pgdata:

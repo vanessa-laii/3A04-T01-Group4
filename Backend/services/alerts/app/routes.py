@@ -11,48 +11,6 @@ Route groups:
   /alerts/database   — ConfiguredAlertsDatabase historical queries
 """
 
-"""
-Alerts Agent Service — Routes (fixed)
-
-KEY FIXES from the uploaded version:
-
-Removed stale imports that no longer exist in models.py:
-  - AlertSeverity      → replaced by TriggeredAlertSeverity
-  - AlertStatus        → replaced by ConfiguredAlertStatus / TriggeredAlertStatus
-  - EnvironmentalType  → replaced by EnvironmentalMetric
-  - TriggeredAlertsResponse  → replaced by ConfiguredAlertSchema
-  - TriggeredAlertsSchema    → replaced by ConfiguredAlertSchema / TriggeredAlertSchema
-
-list_alert_rules, get_alert_rule, list_pending_approvals, list_active_alerts:
-  - These returned List[TriggeredAlertsResponse] and called
-    TriggeredAlertsResponse.from_schema(). That class no longer exists.
-  - Now return List[ConfiguredAlertSchema] / ConfiguredAlertSchema directly
-    since get_all_configured(), get_configured_alert(), etc. already
-    return ConfiguredAlertSchema objects.
-
-approve_alert_rule:
-  - The controller signature is approve_alert_rule(alert_id, approver_id).
-    The route was calling it with one argument. An approver_id query param
-    is now required so the caller supplies who is approving the rule.
-
-acknowledge_alert:
-  - The controller's acknowledge_alert takes triggered_alert_id (the UUID
-    of the triggered event), not the configured alert_id. The path param
-    is renamed to triggered_alert_id for clarity.
-
-query_database:
-  - environmental_type param renamed to environmental_metric (EnvironmentalMetric)
-  - alert_status uses ConfiguredAlertStatus
-  - severity uses TriggeredAlertSeverity
-  - publicly_visible renamed to is_public to match AlertDatabaseQueryParams
-
-get_database_record:
-  - controller.get_database_record() does not exist. The correct method
-    is query_database() filtered to one alert_id, or get_configured_alert()
-    combined with get_triggered_alert(). Replaced with a composite lookup
-    that returns a ConfiguredAlertsDatabaseRecord.
-"""
-
 from __future__ import annotations
 
 import uuid

@@ -4,3 +4,4 @@
 .env.local
 services/**/.env.local
 .vscode
+shared/build

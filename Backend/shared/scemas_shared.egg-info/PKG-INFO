@@ -1,11 +1,5 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.4
 Name: scemas-shared
 Version: 0.1.0
-Summary: Shared domain models, schemas, observer interfaces, and exceptions for SCEMAS.
-Home-page: UNKNOWN
-License: UNKNOWN
-Platform: UNKNOWN
 Requires-Python: >=3.10
-
-UNKNOWN
-
+Requires-Dist: pydantic>=2.0
