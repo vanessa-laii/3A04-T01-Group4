@@ -112,7 +112,6 @@ class CityController:
         data_processing_service_url: str,
         alerts_service_url: str,
         public_service_url: str,
-        session: AsyncSession,
     ):
         # Sub-agent service URLs
         self._accounts_url = accounts_service_url

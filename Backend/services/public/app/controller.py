@@ -96,7 +96,7 @@ class PublicController:
     by the City / Alerts agents upstream.
     """
 
-    def __init__(self, city_service_url: str, session: AsyncSession):
+    def __init__(self, city_service_url: str):
         self._city_url = city_service_url
 
         # Abstraction layer — single instance, owned by the controller
