@@ -21,7 +21,7 @@ from fastapi import Depends
 def _get_env(key: str, default: str) -> str:
     return os.getenv(key, default)
 
-async def get_account_management_controller(
+async def get_public_controller(
     session: AsyncSession = Depends(get_db),
 ) -> PublicController:
     return PublicController(

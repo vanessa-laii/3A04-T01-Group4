@@ -14,12 +14,11 @@ acting as the data ingestion and transformation pipeline for the system.
 
 from contextlib import asynccontextmanager
 
+import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes import router
-from app.controller import DataProcessingController
-from app.dependencies import get_data_processing_controller
 
 
 # ---------------------------------------------------------------------------
@@ -29,17 +28,15 @@ from app.dependencies import get_data_processing_controller
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Initialise the DataProcessingController on startup and shut it down
-    gracefully. The HTTP client (used to forward data to the City agent)
-    and any database connection pools are opened / closed here.
+    Opens the shared httpx.AsyncClient on startup and closes it on
+    shutdown. The client is stored on app.state so dependencies.py can
+    retrieve it via request.app.state.http_client.
     """
-    controller: DataProcessingController = get_data_processing_controller()
-    await controller.initialise()
-    app.state.controller = controller
+    app.state.http_client = httpx.AsyncClient(timeout=10.0)
 
     yield
 
-    await controller.shutdown()
+    await app.state.http_client.aclose()
 
 
 # ---------------------------------------------------------------------------
@@ -50,10 +47,10 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="SCEMAS — Data Processing Agent Service",
         description=(
-            "PAC data ingestion and transformation agent for the Smart City "
-            "Environmental Monitoring and Alert System (SCEMAS). Receives raw "
-            "sensor JSON, validates and structures it into SensorData, stores "
-            "it in the SensorDatabase, and forwards it to the City agent."
+            "PAC data ingestion and transformation agent. Receives raw "
+            "sensor JSON, validates and structures it into SensorData, "
+            "stores it in the SensorDatabase (Supabase/PostgreSQL), and "
+            "forwards it to the City agent."
         ),
         version="0.1.0",
         lifespan=lifespan,
@@ -61,9 +58,6 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
 
-    # -----------------------------------------------------------------------
-    # CORS — internal service, restrict to known origins in production
-    # -----------------------------------------------------------------------
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -72,14 +66,8 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # -----------------------------------------------------------------------
-    # Routers
-    # -----------------------------------------------------------------------
     app.include_router(router, prefix="/api/v1")
 
-    # -----------------------------------------------------------------------
-    # Root health-check
-    # -----------------------------------------------------------------------
     @app.get("/", tags=["Health"])
     async def root():
         return {"service": "data-processing-agent", "status": "running"}

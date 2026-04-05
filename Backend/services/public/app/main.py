@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
     shutdown. The HTTP client used for notifying remote observers is
     opened here and closed gracefully on exit.
     """
-    controller: PublicController = get_public_controller()
+    controller: PublicController = await get_public_controller()
     controller.initialise()
     app.state.controller = controller
 

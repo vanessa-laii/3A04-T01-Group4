@@ -29,7 +29,7 @@ def _get_env(key: str, default: str) -> str:
     return os.getenv(key, default)
 
 
-async def get_account_management_controller(
+async def get_city_controller(
     session: AsyncSession = Depends(get_db),
 ) -> CityController:
     return CityController(accounts_service_url=_get_env(

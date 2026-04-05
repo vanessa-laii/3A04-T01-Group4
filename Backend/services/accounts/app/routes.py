@@ -11,6 +11,7 @@ Route groups:
 from __future__ import annotations
 
 from typing import Optional
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
@@ -163,7 +164,7 @@ async def edit_account(
     ),
 )
 async def get_audit_log(
-    user_id: Optional[str] = Query(
+    user_id: Optional[uuid.UUID] = Query(
         None,
         description="Filter audit events by userId.",
         example="user-001",
@@ -174,7 +175,7 @@ async def get_audit_log(
         get_account_management_controller
     ),
 ) -> AuditLogPageResponse:
-    return controller.get_audit_log(
+    return await controller.get_audit_log(
         user_id=user_id, page=page, page_size=page_size
     )
 
@@ -192,10 +193,10 @@ async def get_audit_log(
     ),
 )
 async def display_audit_messages(
-    user_id: Optional[str] = Query(None, example="user-001"),
+    user_id: Optional[uuid.UUID] = Query(None, example="user-001"),
     limit: int = Query(20, ge=1, le=50),
     controller: AccountManagementController = Depends(
         get_account_management_controller
     ),
 ) -> list[AuditLogEntryResponse]:
-    return controller.get_audit_event_display(user_id=user_id, limit=limit)
+    return await controller.get_audit_event_display(user_id=user_id, limit=limit)

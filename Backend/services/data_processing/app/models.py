@@ -11,200 +11,193 @@ The hierarchy mirrors the UML directly:
 """
 
 from __future__ import annotations
-
+ 
+import uuid
+from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union, Annotated
-
+from typing import Any, Dict, List, Optional, Annotated
+ 
 from pydantic import BaseModel, Field, field_validator
-
-
+import math
+ 
+ 
 # ---------------------------------------------------------------------------
-# Enums
+# Enums — values match DB CHECK constraints exactly
 # ---------------------------------------------------------------------------
-
-class SensorMetricType(str, Enum):
-    TEMPERATURE = "temperature"
-    HUMIDITY = "humidity"
-    PARTICULATE_MATTER = "particulate_matter"
-    AIR_QUALITY = "air_quality"
-    NOISE_LEVEL = "noise_level"
-
-
+ 
+class MetricType(str, Enum):
+    """Matches: ARRAY['Air Quality','Temperature','Humidity','Noise Levels','UV Levels']"""
+    AIR_QUALITY  = "Air Quality"
+    TEMPERATURE  = "Temperature"
+    HUMIDITY     = "Humidity"
+    NOISE_LEVELS = "Noise Levels"
+    UV_LEVELS    = "UV Levels"
+ 
+ 
+class DataQualityFlag(str, Enum):
+    """Matches: ARRAY['valid','questionable','invalid']"""
+    VALID        = "valid"
+    QUESTIONABLE = "questionable"
+    INVALID      = "invalid"
+ 
+ 
 class ProcessingStatus(str, Enum):
-    """Tracks the state of a data batch through the pipeline."""
-    RECEIVED = "received"       # raw JSON arrived
-    PROCESSING = "processing"   # being parsed / validated
-    STORED = "stored"           # persisted to SensorDatabase
-    FORWARDED = "forwarded"     # sent to City agent
-    FAILED = "failed"           # error at any stage
-
-
+    RECEIVED   = "received"
+    PROCESSING = "processing"
+    STORED     = "stored"
+    FORWARDED  = "forwarded"
+    FAILED     = "failed"
+ 
+ 
 # ---------------------------------------------------------------------------
-# Raw inbound payload — ExternalSensorData
-# This is what physical sensors / gateway devices POST to this service.
-# Intentionally loose (Dict) because sensor vendors vary; validation
-# happens inside DataProcessing.processJSONData().
+# SensorMetadata — static sensor registry
 # ---------------------------------------------------------------------------
-
+ 
+class SensorMetadataSchema(BaseModel):
+    sensor_id:            str
+    sensor_name:          Annotated[str, Field(example="AQI Sensor Node 042")]
+    geographic_zone:      Annotated[str, Field(example="Downtown")]
+    latitude:             Annotated[float, Field(example=43.6532)]
+    longitude:            Annotated[float, Field(example=-79.3832)]
+    sensor_type:          Annotated[str, Field(example="Air Quality")]
+    location_description: Optional[str]      = None
+    installation_date:    Optional[datetime] = None
+    is_active:            bool               = True
+    last_maintenance:     Optional[datetime] = None
+    manufacturer:         Optional[str]      = None
+    model:                Optional[str]      = None
+    created_at:           Optional[datetime] = None
+ 
+ 
+# ---------------------------------------------------------------------------
+# Individual metric reading — maps to one TimeSeriesSensorData row
+# ---------------------------------------------------------------------------
+ 
+class TimeSeriesReadingSchema(BaseModel):
+    """
+    A single metric reading row from time_series_sensor_data.
+    This is the atomic unit of storage in the real schema.
+    """
+    data_id:             Optional[uuid.UUID]    = None   # set by DB
+    sensor_id:           str
+    metric_type:         MetricType
+    metric_value:        float
+    unit:                Annotated[str, Field(example="AQI")]
+    recorded_at:         datetime
+    geographic_zone:     Annotated[str, Field(example="Downtown")]
+    data_quality_flag:   DataQualityFlag = DataQualityFlag.VALID
+    additional_metadata: Optional[Dict[str, Any]] = None
+    ingested_at:         Optional[datetime] = None
+ 
+    @field_validator("metric_value")
+    @classmethod
+    def must_be_finite(cls, v: float) -> float:
+        if not math.isfinite(v):
+            raise ValueError("metric_value must be finite.")
+        return v
+ 
+ 
+# ---------------------------------------------------------------------------
+# Inbound API contract — raw sensor payload
+# One payload produces N TimeSeriesReadingSchema rows (one per metric).
+# This is what sensors POST to /sensor/ingest.
+# ---------------------------------------------------------------------------
+ 
 class RawSensorPayload(BaseModel):
     """
-    Raw JSON payload arriving from ExternalSensorData.send_raw_JSON().
-    The sensor_data field is an arbitrary dict — processJSONData() is
-    responsible for parsing and validating its contents.
+    Raw JSON payload from ExternalSensorData.send_raw_JSON().
+    The sensor_data dict is intentionally loose — processJSONData()
+    handles validation and normalisation.
     """
-    source_id: Annotated[
-        str,
-        Field(description="Unique identifier of the sensor or gateway device.",
-        example="sensor-node-042")
-    ]
-    sensor_data: Annotated[
-        Dict[str, Any], 
-        Field(
-        description="Raw sensor reading as collected by ExternalSensorData.",
+    source_id:   Annotated[str, Field(example="sensor-node-042")]
+    sensor_data: Annotated[Dict[str, Any], Field(
         example={
-            "timestamp": "2025-06-01T12:00:00Z",
-            "region": "Downtown",
-            "gps_location": "43.6532,-79.3832",
+            "recorded_at":    "2025-06-01T12:00:00Z",
+            "geographic_zone": "Downtown",
             "metrics": [
-                {"type": "temperature", "value": 22.5, "unit": "celsius"},
-                {"type": "air_quality", "value": 47.0, "unit": "AQI"},
+                {"metric_type": "Air Quality", "value": 162.4, "unit": "AQI"},
+                {"metric_type": "Temperature", "value": 28.1,  "unit": "celsius"},
             ],
-        }),
-    ]
-
-
+        },
+    )]
+ 
+ 
 # ---------------------------------------------------------------------------
-# Structured sensor metric schemas — SensorMetrics hierarchy
+# SensorData — grouped view of one sensor payload across multiple rows
+# Used internally and for forwarding to the City agent.
 # ---------------------------------------------------------------------------
-
-class SensorMetricSchema(BaseModel):
-    """Single structured metric reading (maps to a SensorMetrics subclass)."""
-    metric_type: SensorMetricType
-    value: float
-    unit: Annotated[str, Field(..., example="celsius")]
-
-    @field_validator("value")
-    @classmethod
-    def value_must_be_finite(cls, v: float) -> float:
-        import math
-        if not math.isfinite(v):
-            raise ValueError("Metric value must be a finite number.")
-        return v
-
-
-class TemperatureSchema(SensorMetricSchema):
-    metric_type: SensorMetricType = SensorMetricType.TEMPERATURE
-    unit: str = "celsius"
-
-
-class HumiditySchema(SensorMetricSchema):
-    metric_type: SensorMetricType = SensorMetricType.HUMIDITY
-    unit: str = "percent"
-
-
-class ParticulateMatterSchema(SensorMetricSchema):
-    metric_type: SensorMetricType = SensorMetricType.PARTICULATE_MATTER
-    unit: str = "µg/m³"
-
-
-class AirQualitySchema(SensorMetricSchema):
-    metric_type: SensorMetricType = SensorMetricType.AIR_QUALITY
-    unit: str = "AQI"
-
-
-class NoiseLevelSchema(SensorMetricSchema):
-    metric_type: SensorMetricType = SensorMetricType.NOISE_LEVEL
-    unit: str = "dB"
-
-
-# ---------------------------------------------------------------------------
-# SensorData — structured output of processJSONData()
-# ---------------------------------------------------------------------------
-
+ 
 class SensorDataSchema(BaseModel):
     """
-    Fully validated, structured sensor reading.
-    Produced by DataProcessing.processJSONData() and stored by importDataDB().
+    Logical grouping of multiple TimeSeriesReadingSchema rows that arrived
+    together from the same sensor at the same recorded_at timestamp.
+    This is the unit forwarded to the City agent.
     """
-    timestamp: Annotated[str, Field(..., example="2025-06-01T12:00:00Z")]
-    region: Annotated[str, Field(..., example="Downtown")]
-    gps_location: Annotated[str, Field(..., example="43.6532,-79.3832")]
-    source_id: Annotated[str, Field(..., example="sensor-node-042")]
-    metrics: List[SensorMetricSchema]
-
-    @field_validator("metrics")
-    @classmethod
-    def metrics_must_not_be_empty(
-        cls, v: List[SensorMetricSchema]
-    ) -> List[SensorMetricSchema]:
-        if not v:
-            raise ValueError("SensorData must contain at least one metric.")
-        return v
-
-
+    sensor_id:       str
+    geographic_zone: str
+    recorded_at:     datetime
+    readings:        List[TimeSeriesReadingSchema]
+ 
+    def get_reading(self, metric_type: MetricType) -> Optional[TimeSeriesReadingSchema]:
+        for r in self.readings:
+            if r.metric_type == metric_type:
+                return r
+        return None
+ 
+ 
 # ---------------------------------------------------------------------------
-# SensorDatabase schemas — persistence layer
+# Database query schemas
 # ---------------------------------------------------------------------------
-
-class SensorDatabaseRecord(BaseModel):
-    """
-    A single record as stored in / retrieved from the SensorDatabase.
-    Wraps SensorDataSchema with a database-assigned ID and storage timestamp.
-    """
-    record_id: Annotated[str, Field(..., example="rec-00142")]
-    stored_at: Annotated[str, Field(..., example="2025-06-01T12:00:05Z")]
-    sensor_data: SensorDataSchema
-
-
+ 
 class SensorDatabaseQueryParams(BaseModel):
-    """Query filters for retrieving historical records from SensorDatabase."""
-    region: Annotated[Optional[str], Field(None, example="Downtown")]
-    metric_type: Optional[SensorMetricType] = None
-    from_timestamp: Annotated[Optional[str], Field(None, example="2025-06-01T00:00:00Z")]
-    to_timestamp: Annotated[Optional[str], Field(None, example="2025-06-01T23:59:59Z")]
-    limit: int = Field(100, ge=1, le=1000)
-
-
+    geographic_zone:   Optional[str]              = None
+    metric_type:       Optional[MetricType]        = None
+    sensor_id:         Optional[str]               = None
+    from_recorded_at:  Optional[datetime]          = None
+    to_recorded_at:    Optional[datetime]          = None
+    data_quality_flag: Optional[DataQualityFlag]   = None
+    limit:             int = Field(100, ge=1, le=1000)
+ 
+ 
 class SensorDatabaseQueryResponse(BaseModel):
-    records: List[SensorDatabaseRecord]
-    total: int
-
-
+    readings: List[TimeSeriesReadingSchema]
+    total:    int
+ 
+ 
 # ---------------------------------------------------------------------------
-# Pipeline processing response
-# Returned after a full ingest cycle: receive → parse → store → forward
+# Pipeline result
 # ---------------------------------------------------------------------------
-
+ 
 class PipelineResult(BaseModel):
-    """
-    Describes the outcome of a full data processing pipeline run triggered
-    by a single RawSensorPayload.
-    """
-    source_id: str
-    status: ProcessingStatus
-    record_id: Optional[str] = None       # set if STORED
-    forwarded_to_city: bool = False        # set if FORWARDED
-    validation_errors: List[str] = []
-    message: str = ""
-
-
+    source_id:          str
+    status:             ProcessingStatus
+    rows_inserted:      int = 0            # number of time_series rows created
+    forwarded_to_city:  bool = False
+    validation_errors:  List[str] = []
+    message:            str = ""
+ 
+ 
 # ---------------------------------------------------------------------------
-# Location
+# Location response
+# Now derived from SensorMetadata (lat/lon) not from SensorData
 # ---------------------------------------------------------------------------
-
+ 
 class LocationResponse(BaseModel):
-    region: str
-    gps_location: str
-
-
+    sensor_id:       str
+    sensor_name:     str
+    geographic_zone: str
+    latitude:        float
+    longitude:       float
+ 
+ 
 # ---------------------------------------------------------------------------
 # Generic responses
 # ---------------------------------------------------------------------------
-
+ 
 class SuccessResponse(BaseModel):
     success: bool
     message: str = ""
-
-
+ 
+ 
 class ErrorResponse(BaseModel):
     detail: str

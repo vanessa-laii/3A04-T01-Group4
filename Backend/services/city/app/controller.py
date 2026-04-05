@@ -18,7 +18,6 @@ from typing import List, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.orm_models import AccountInfoORM, AuditLogORM
 
 
 import httpx

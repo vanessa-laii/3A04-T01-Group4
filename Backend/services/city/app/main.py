@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
     shutdown.  Any database connection pools, background tasks, or
     inter-service HTTP clients should be started / stopped here.
     """
-    controller: CityController = get_city_controller()
+    controller: CityController = await get_city_controller()
     controller.initialise()          # wire up sub-agents, seed observer list
     app.state.controller = controller
 

@@ -11,8 +11,51 @@ Route groups:
   /alerts/database   — ConfiguredAlertsDatabase historical queries
 """
 
+"""
+Alerts Agent Service — Routes (fixed)
+
+KEY FIXES from the uploaded version:
+
+Removed stale imports that no longer exist in models.py:
+  - AlertSeverity      → replaced by TriggeredAlertSeverity
+  - AlertStatus        → replaced by ConfiguredAlertStatus / TriggeredAlertStatus
+  - EnvironmentalType  → replaced by EnvironmentalMetric
+  - TriggeredAlertsResponse  → replaced by ConfiguredAlertSchema
+  - TriggeredAlertsSchema    → replaced by ConfiguredAlertSchema / TriggeredAlertSchema
+
+list_alert_rules, get_alert_rule, list_pending_approvals, list_active_alerts:
+  - These returned List[TriggeredAlertsResponse] and called
+    TriggeredAlertsResponse.from_schema(). That class no longer exists.
+  - Now return List[ConfiguredAlertSchema] / ConfiguredAlertSchema directly
+    since get_all_configured(), get_configured_alert(), etc. already
+    return ConfiguredAlertSchema objects.
+
+approve_alert_rule:
+  - The controller signature is approve_alert_rule(alert_id, approver_id).
+    The route was calling it with one argument. An approver_id query param
+    is now required so the caller supplies who is approving the rule.
+
+acknowledge_alert:
+  - The controller's acknowledge_alert takes triggered_alert_id (the UUID
+    of the triggered event), not the configured alert_id. The path param
+    is renamed to triggered_alert_id for clarity.
+
+query_database:
+  - environmental_type param renamed to environmental_metric (EnvironmentalMetric)
+  - alert_status uses ConfiguredAlertStatus
+  - severity uses TriggeredAlertSeverity
+  - publicly_visible renamed to is_public to match AlertDatabaseQueryParams
+
+get_database_record:
+  - controller.get_database_record() does not exist. The correct method
+    is query_database() filtered to one alert_id, or get_configured_alert()
+    combined with get_triggered_alert(). Replaced with a composite lookup
+    that returns a ConfiguredAlertsDatabaseRecord.
+"""
+
 from __future__ import annotations
 
+import uuid
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -25,20 +68,20 @@ from app.models import (
     AlertDatabaseQueryParams,
     AlertDatabaseQueryResponse,
     AlertPresentationSchema,
-    AlertSeverity,
-    AlertStatus,
     ApproveAlertRuleResponse,
+    ConfiguredAlertSchema,
     ConfiguredAlertsDatabaseRecord,
+    ConfiguredAlertStatus,
     CreateAlertRuleRequest,
     CreateAlertRuleResponse,
     DeleteAlertRuleResponse,
     EditAlertRuleRequest,
     EditAlertRuleResponse,
-    EnvironmentalType,
+    EnvironmentalMetric,
     RejectAlertRuleResponse,
     SendForApprovalResponse,
-    TriggeredAlertsResponse,
-    TriggeredAlertsSchema,
+    TriggeredAlertSeverity,
+    TriggeredAlertStatus,
 )
 
 router = APIRouter()
@@ -56,9 +99,9 @@ router = APIRouter()
     tags=["Alert Rules"],
     summary="Create a new alert rule",
     description=(
-        "Creates a new TriggeredAlerts rule in the ConfiguredAlertsDatabase. "
-        "New rules are placed in PENDING_APPROVAL status and must be sent for "
-        "approval before becoming active. Maps to UML: "
+        "Creates a new configured alert rule in the database. "
+        "New rules are placed in 'pending' status and must be submitted "
+        "for approval before becoming active. Maps to UML: "
         "createAlertRule(alertID, environmentalType, Region, threshold, "
         "time, visibility): boolean."
     ),
@@ -72,35 +115,34 @@ async def create_alert_rule(
 
 @router.get(
     "/alerts/rules",
-    response_model=List[TriggeredAlertsResponse],
+    response_model=List[ConfiguredAlertSchema],
     tags=["Alert Rules"],
     summary="List all alert rules",
-    description="Returns all alert rules currently held in the abstraction layer.",
+    description="Returns all configured alert rules from the database.",
 )
 async def list_alert_rules(
     controller: CityAlertManagement = Depends(get_alert_management_controller),
-) -> List[TriggeredAlertsResponse]:
-    rules = controller.get_all_alert_rules()
-    return [TriggeredAlertsResponse.from_schema(r) for r in rules]
+) -> List[ConfiguredAlertSchema]:
+    return await controller.get_all_configured()
 
 
 @router.get(
     "/alerts/rules/{alert_id}",
-    response_model=TriggeredAlertsResponse,
+    response_model=ConfiguredAlertSchema,
     tags=["Alert Rules"],
     summary="Get a specific alert rule",
 )
 async def get_alert_rule(
-    alert_id: str,
+    alert_id: uuid.UUID,
     controller: CityAlertManagement = Depends(get_alert_management_controller),
-) -> TriggeredAlertsResponse:
-    alert = controller.get_alert_rule(alert_id)
+) -> ConfiguredAlertSchema:
+    alert = await controller.get_configured_alert(alert_id)
     if alert is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Alert rule '{alert_id}' not found.",
         )
-    return TriggeredAlertsResponse.from_schema(alert)
+    return alert
 
 
 @router.patch(
@@ -110,12 +152,12 @@ async def get_alert_rule(
     summary="Edit an alert rule",
     description=(
         "Partially updates an existing alert rule. Only supplied fields are "
-        "modified. Resolved and rejected alerts cannot be edited. Maps to UML: "
+        "modified. Rejected rules cannot be edited. Maps to UML: "
         "editAlertRule(alertID, updates): boolean."
     ),
 )
 async def edit_alert_rule(
-    alert_id: str,
+    alert_id: uuid.UUID,
     request: EditAlertRuleRequest,
     controller: CityAlertManagement = Depends(get_alert_management_controller),
 ) -> EditAlertRuleResponse:
@@ -126,14 +168,15 @@ async def edit_alert_rule(
     "/alerts/rules/{alert_id}",
     response_model=DeleteAlertRuleResponse,
     tags=["Alert Rules"],
-    summary="Delete an alert rule",
+    summary="Delete (deactivate) an alert rule",
     description=(
-        "Removes an alert rule from both the ConfiguredAlertsDatabase and the "
-        "in-memory abstraction layer. Maps to UML: deleteAlertRule(alertID): boolean."
+        "Soft-deletes an alert rule by setting is_active=False. A hard "
+        "DELETE is not used because triggered_alerts holds FK references "
+        "to configured_alerts. Maps to UML: deleteAlertRule(alertID): boolean."
     ),
 )
 async def delete_alert_rule(
-    alert_id: str,
+    alert_id: uuid.UUID,
     controller: CityAlertManagement = Depends(get_alert_management_controller),
 ) -> DeleteAlertRuleResponse:
     return await controller.delete_alert_rule(alert_id)
@@ -150,12 +193,12 @@ async def delete_alert_rule(
     tags=["Approval Workflow"],
     summary="Submit an alert rule for approval",
     description=(
-        "Moves a PENDING_APPROVAL alert rule into the pending approvals queue. "
-        "Maps to UML: sendForApproval(alertID): void."
+        "Marks a pending alert rule as submitted for approval in the "
+        "abstraction layer. Maps to UML: sendForApproval(alertID): void."
     ),
 )
 async def send_for_approval(
-    alert_id: str,
+    alert_id: uuid.UUID,
     controller: CityAlertManagement = Depends(get_alert_management_controller),
 ) -> SendForApprovalResponse:
     return await controller.send_for_approval(alert_id)
@@ -163,19 +206,18 @@ async def send_for_approval(
 
 @router.get(
     "/alerts/approval/pending",
-    response_model=List[TriggeredAlertsResponse],
+    response_model=List[ConfiguredAlertSchema],
     tags=["Approval Workflow"],
     summary="List all alerts pending approval",
     description=(
-        "Returns all alert rules currently in the pending approvals queue "
+        "Returns all alert rules with status 'pending' from the database "
         "(UML: pendingApprovals: List<TriggeredAlerts>)."
     ),
 )
 async def list_pending_approvals(
     controller: CityAlertManagement = Depends(get_alert_management_controller),
-) -> List[TriggeredAlertsResponse]:
-    pending = controller.get_pending_approvals()
-    return [TriggeredAlertsResponse.from_schema(a) for a in pending]
+) -> List[ConfiguredAlertSchema]:
+    return await controller.get_pending_approvals()
 
 
 @router.post(
@@ -184,17 +226,21 @@ async def list_pending_approvals(
     tags=["Approval Workflow"],
     summary="Approve an alert rule",
     description=(
-        "Approves a pending alert rule, setting its status to ACTIVE. If the "
-        "rule is publicly visible it is automatically forwarded to the City "
-        "agent, which routes it to the Public agent. Maps to UML: "
-        "approveAlertRule(alertID): boolean."
+        "Approves a pending alert rule, setting its status to 'approved'. "
+        "If the rule visibility is 'Public Facing' it is forwarded to the "
+        "City agent. Maps to UML: approveAlertRule(alertID): boolean. "
+        "The approver_id query parameter identifies who is approving."
     ),
 )
 async def approve_alert_rule(
-    alert_id: str,
+    alert_id: uuid.UUID,
+    approver_id: uuid.UUID = Query(
+        ...,
+        description="accountinfo_id of the operator approving this rule.",
+    ),
     controller: CityAlertManagement = Depends(get_alert_management_controller),
 ) -> ApproveAlertRuleResponse:
-    return await controller.approve_alert_rule(alert_id)
+    return await controller.approve_alert_rule(alert_id, approver_id)
 
 
 @router.post(
@@ -203,13 +249,12 @@ async def approve_alert_rule(
     tags=["Approval Workflow"],
     summary="Reject an alert rule",
     description=(
-        "Rejects a pending alert rule, setting its status to REJECTED. "
-        "Rejected rules cannot be edited or re-submitted. "
-        "Not defined in UML but required to complete the approval workflow."
+        "Rejects a pending alert rule, setting its status to 'rejected'. "
+        "Rejected rules cannot be edited or re-submitted."
     ),
 )
 async def reject_alert_rule(
-    alert_id: str,
+    alert_id: uuid.UUID,
     controller: CityAlertManagement = Depends(get_alert_management_controller),
 ) -> RejectAlertRuleResponse:
     return await controller.reject_alert_rule(alert_id)
@@ -221,48 +266,51 @@ async def reject_alert_rule(
 
 @router.get(
     "/alerts/active",
-    response_model=List[TriggeredAlertsResponse],
+    response_model=List[ConfiguredAlertSchema],
     tags=["Active Alerts"],
-    summary="List all active alerts",
+    summary="List all active (approved) alert rules",
     description=(
-        "Returns all alert rules with status ACTIVE. These are approved rules "
-        "that are currently live in the system."
+        "Returns all configured alert rules with status 'approved' and "
+        "is_active=True."
     ),
 )
 async def list_active_alerts(
     controller: CityAlertManagement = Depends(get_alert_management_controller),
-) -> List[TriggeredAlertsResponse]:
-    active = controller.get_active_rules()
-    return [TriggeredAlertsResponse.from_schema(a) for a in active]
+) -> List[ConfiguredAlertSchema]:
+    return await controller.get_active_rules()
 
 
 # ---------------------------------------------------------------------------
 # Acknowledgement
 # UML: acknowledgeAlert(alertID, operatorID): void
+#
+# NOTE: alert_id here is the triggered_alert_id (UUID primary key of the
+# triggered_alerts table), not the configured alert_id. The path param
+# is named triggered_alert_id for clarity.
 # ---------------------------------------------------------------------------
 
 @router.post(
-    "/alerts/{alert_id}/acknowledge",
+    "/alerts/triggered/{triggered_alert_id}/acknowledge",
     response_model=AcknowledgeAlertResponse,
     tags=["Acknowledgement"],
-    summary="Acknowledge an active alert",
+    summary="Acknowledge a triggered alert",
     description=(
-        "Marks an ACTIVE alert as ACKNOWLEDGED by the given operator. "
+        "Marks a triggered alert event as ACKNOWLEDGED by the given operator. "
+        "The path parameter is the triggered_alert_id (PK of triggered_alerts), "
+        "not the configured alert_id. "
         "Maps to UML: acknowledgeAlert(alertID, operatorID): void."
     ),
 )
 async def acknowledge_alert(
-    alert_id: str,
+    triggered_alert_id: uuid.UUID,
     request: AcknowledgeAlertRequest,
     controller: CityAlertManagement = Depends(get_alert_management_controller),
 ) -> AcknowledgeAlertResponse:
-    return await controller.acknowledge_alert(alert_id, request.operatorID)
+    return await controller.acknowledge_alert(triggered_alert_id, request.operator_id)
 
 
 # ---------------------------------------------------------------------------
 # AlertPresentation — UML interface state
-# UML: alertPresentation: AlertPresentation
-#      + update(AlertPresentation)
 # ---------------------------------------------------------------------------
 
 @router.get(
@@ -272,9 +320,8 @@ async def acknowledge_alert(
     summary="Get the current AlertPresentation state",
     description=(
         "Returns the current AlertPresentation state from the abstraction "
-        "layer — the most recently triggered or updated alert with its "
-        "human-readable presentation message. Maps to UML AlertPresentation "
-        "interface (alertPresentation: AlertPresentation)."
+        "layer — the most recently acted-on alert with its human-readable "
+        "presentation message."
     ),
 )
 async def get_presentation(
@@ -297,28 +344,30 @@ async def get_presentation(
     "/alerts/database/records",
     response_model=AlertDatabaseQueryResponse,
     tags=["Database"],
-    summary="Query ConfiguredAlertsDatabase records",
+    summary="Query alert database records",
     description=(
-        "Query historical alert records from the ConfiguredAlertsDatabase. "
-        "Supports filtering by region, environmental type, status, severity, "
-        "and public visibility."
+        "Query configured alert records with their associated triggered events. "
+        "Supports filtering by geographic area, environmental metric, "
+        "configured status, triggered status, severity, and public visibility."
     ),
 )
 async def query_database(
-    region: Optional[str] = Query(None, example="Downtown"),
-    environmental_type: Optional[EnvironmentalType] = Query(None),
-    alert_status: Optional[AlertStatus] = Query(None, alias="status"),
-    severity: Optional[AlertSeverity] = Query(None),
-    publicly_visible: Optional[bool] = Query(None),
+    geographic_area: Optional[str] = Query(None, example="Downtown"),
+    environmental_metric: Optional[EnvironmentalMetric] = Query(None),
+    configured_status: Optional[ConfiguredAlertStatus] = Query(None),
+    triggered_status: Optional[TriggeredAlertStatus] = Query(None),
+    severity: Optional[TriggeredAlertSeverity] = Query(None),
+    is_public: Optional[bool] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
     controller: CityAlertManagement = Depends(get_alert_management_controller),
 ) -> AlertDatabaseQueryResponse:
     params = AlertDatabaseQueryParams(
-        region=region,
-        environmental_type=environmental_type,
-        status=alert_status,
+        geographic_area=geographic_area,
+        environmental_metric=environmental_metric,
+        configured_status=configured_status,
+        triggered_status=triggered_status,
         severity=severity,
-        publicly_visible=publicly_visible,
+        is_public=is_public,
         limit=limit,
     )
     return await controller.query_database(params)
@@ -328,16 +377,32 @@ async def query_database(
     "/alerts/database/records/{alert_id}",
     response_model=ConfiguredAlertsDatabaseRecord,
     tags=["Database"],
-    summary="Get a specific ConfiguredAlertsDatabase record",
+    summary="Get a specific configured alert record with its triggered events",
+    description=(
+        "Returns a ConfiguredAlertsDatabaseRecord containing the configured "
+        "alert rule and all of its associated triggered alert events."
+    ),
 )
 async def get_database_record(
-    alert_id: str,
+    alert_id: uuid.UUID,
     controller: CityAlertManagement = Depends(get_alert_management_controller),
 ) -> ConfiguredAlertsDatabaseRecord:
-    record = await controller.get_database_record(alert_id)
-    if record is None:
+    # Fetch the configured rule
+    configured = await controller.get_configured_alert(alert_id)
+    if configured is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No database record found for alert '{alert_id}'.",
+            detail=f"No alert record found for alert_id '{alert_id}'.",
         )
-    return record
+
+    # Fetch all triggered events linked to this rule
+    result = await controller.query_database(
+        AlertDatabaseQueryParams(limit=1000)
+    )
+    triggered = []
+    for record in result.records:
+        if record.alert.alert_id == alert_id:
+            triggered = record.triggered
+            break
+
+    return ConfiguredAlertsDatabaseRecord(alert=configured, triggered=triggered)

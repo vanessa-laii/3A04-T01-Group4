@@ -9,269 +9,251 @@ Mirrors the UML class structure directly:
 """
 
 from __future__ import annotations
-
+ 
+import uuid
+from datetime import datetime
 from enum import Enum
-from typing import List, Optional, Annotated
-
+from typing import Any, Dict, List, Optional, Annotated
+ 
 from pydantic import BaseModel, Field
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
-# Enums
+# Enums — values match DB CHECK constraints exactly
 # ---------------------------------------------------------------------------
-
-class AlertSeverity(int, Enum):
-    LOW = 1
-    MEDIUM = 2
-    HIGH = 3
-    CRITICAL = 4
-
-
-class AlertStatus(int, Enum):
-    """
-    Maps to the UML TriggeredAlerts.status: int field.
-    Tracks an alert through its full lifecycle.
-    """
-    PENDING_APPROVAL = 0   # rule created, awaiting approval
-    ACTIVE = 1             # approved and live
-    ACKNOWLEDGED = 2       # operator has acknowledged it
-    RESOLVED = 3           # no longer active
-    REJECTED = 4           # approval was denied
-
-
-class EnvironmentalType(str, Enum):
-    """Maps to TriggeredAlerts.environmentalType: string."""
-    TEMPERATURE = "temperature"
-    HUMIDITY = "humidity"
-    PARTICULATE_MATTER = "particulate_matter"
-    AIR_QUALITY = "air_quality"
-    NOISE_LEVEL = "noise_level"
-
-
+ 
+class EnvironmentalMetric(str, Enum):
+    """Matches: ARRAY['Air Quality','Temperature','Humidity','Noise Levels','UV Levels']"""
+    AIR_QUALITY    = "Air Quality"
+    TEMPERATURE    = "Temperature"
+    HUMIDITY       = "Humidity"
+    NOISE_LEVELS   = "Noise Levels"
+    UV_LEVELS      = "UV Levels"
+ 
+ 
+class AlertVisibility(str, Enum):
+    """Matches: ARRAY['Internal','Public Facing']"""
+    INTERNAL      = "Internal"
+    PUBLIC_FACING = "Public Facing"
+ 
+ 
+class ConfiguredAlertStatus(str, Enum):
+    """Matches: ARRAY['pending','approved','rejected']"""
+    PENDING  = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+ 
+ 
+class TriggeredAlertSeverity(str, Enum):
+    """Matches: ARRAY['Low','Medium','High','Critical']"""
+    LOW      = "Low"
+    MEDIUM   = "Medium"
+    HIGH     = "High"
+    CRITICAL = "Critical"
+ 
+ 
+class TriggeredAlertStatus(str, Enum):
+    """Matches: ARRAY['active','acknowledged','resolved','dismissed']"""
+    ACTIVE       = "active"
+    ACKNOWLEDGED = "acknowledged"
+    RESOLVED     = "resolved"
+    DISMISSED    = "dismissed"
+ 
+ 
 # ---------------------------------------------------------------------------
-# TriggeredAlerts — core UML data class
-# UML fields:
-#   - alertID: String
-#   - threshold: double
-#   - environmentalType: string
-#   - region: String
-#   - severity: int
-#   - publiclyVisible: boolean
-#   - time: String
-#   - status: int
-# UML methods (represented as computed properties / response fields):
-#   + getAlertID(): string
-#   + getSeverity(): int
-#   + getStatus(): String
-#   + getActions(): String
+# ConfiguredAlerts schemas
 # ---------------------------------------------------------------------------
-
-class TriggeredAlertsSchema(BaseModel):
-    """
-    Full representation of a TriggeredAlerts object.
-    Used for DB storage and internal inter-service communication.
-    """
-    alertID: Annotated[str, Field(example="alert-001")]
-    threshold: Annotated[float, Field(
-        description="The threshold value that triggered this alert.",
-        example=150.0
-    )]
-    environmentalType: EnvironmentalType
-    region: Annotated[str, Field(example="Downtown")]
-    severity: AlertSeverity
-    publiclyVisible: bool = Field(
-        ...,
-        description="Whether this alert should be forwarded to the Public agent.",
-    )
-    time: Annotated[str, Field(
-        description="ISO 8601 timestamp when the alert was triggered.",
-        example="2025-06-01T14:30:00Z",
-    )]
-    status: AlertStatus = AlertStatus.PENDING_APPROVAL
-
-    # UML: getAlertID()
+ 
+class ConfiguredAlertSchema(BaseModel):
+    """Full representation of a configured_alerts record."""
+    alert_id:             Optional[uuid.UUID]    = None   # set by DB
+    operator_id:          uuid.UUID              = Field(..., description="accountinfo_id of the operator who created this rule.")
+    environmental_metric: EnvironmentalMetric
+    geographic_area:      Annotated[str  , Field(example="Downtown")]
+    threshold_value:      Annotated[float, Field(example=150.0)]
+    timeframe_minutes:    Annotated[int  , Field(example=15)]
+    alert_visibility:     AlertVisibility
+    alert_name:           Annotated[str  , Field(example="Downtown AQI High Alert")]
+    threshold_value_max:  Optional[float]        = None
+    description:          Optional[str]          = None
+    is_active:            bool                   = True
+    created_at:           Optional[datetime]     = None
+    updated_at:           Optional[datetime]     = None
+    approved_by:          Optional[uuid.UUID]    = None
+    approval_date:        Optional[datetime]     = None
+    status:               ConfiguredAlertStatus  = ConfiguredAlertStatus.PENDING
+ 
+ 
+class CreateAlertRuleRequest(BaseModel):
+    """Request to create a new configured alert rule."""
+    operator_id:          uuid.UUID
+    environmental_metric: EnvironmentalMetric
+    geographic_area:      Annotated[str  , Field(example="Downtown")]
+    threshold_value:      Annotated[float, Field(example=150.0)]
+    timeframe_minutes:    Annotated[int  , Field(example=15)]
+    alert_visibility:     AlertVisibility
+    alert_name:           Annotated[str  , Field(example="Downtown AQI High Alert")]
+    threshold_value_max:  Optional[float] = None
+    description:          Optional[str]   = None
+ 
+ 
+class CreateAlertRuleResponse(BaseModel):
+    success:  bool
+    alert_id: Optional[uuid.UUID] = None
+    status:   Optional[ConfiguredAlertStatus] = None
+    message:  str = ""
+    presentation: Optional["AlertPresentationSchema"] = None
+ 
+ 
+class EditAlertRuleRequest(BaseModel):
+    """Partial update — only supplied fields are changed."""
+    threshold_value:      Optional[float]              = None
+    threshold_value_max:  Optional[float]              = None
+    timeframe_minutes:    Optional[int]                = None
+    geographic_area:      Optional[str]                = None
+    alert_visibility:     Optional[AlertVisibility]    = None
+    alert_name:           Optional[str]                = None
+    description:          Optional[str]                = None
+    is_active:            Optional[bool]               = None
+ 
+ 
+class EditAlertRuleResponse(BaseModel):
+    success:  bool
+    alert_id: uuid.UUID
+    message:  str = ""
+    presentation: Optional["AlertPresentationSchema"] = None
+ 
+ 
+class SendForApprovalResponse(BaseModel):
+    success:  bool
+    alert_id: uuid.UUID
+    message:  str = ""
+    presentation: Optional["AlertPresentationSchema"] = None
+ 
+ 
+class ApproveAlertRuleResponse(BaseModel):
+    success:              bool
+    alert_id:             uuid.UUID
+    forwarded_to_city:    bool = False
+    message:              str = ""
+    presentation:         Optional["AlertPresentationSchema"] = None
+ 
+ 
+class RejectAlertRuleResponse(BaseModel):
+    success:  bool
+    alert_id: uuid.UUID
+    message:  str = ""
+ 
+ 
+class DeleteAlertRuleResponse(BaseModel):
+    success:  bool
+    alert_id: uuid.UUID
+    message:  str = ""
+ 
+ 
+# ---------------------------------------------------------------------------
+# TriggeredAlerts schemas
+# ---------------------------------------------------------------------------
+ 
+class TriggeredAlertSchema(BaseModel):
+    """Full representation of a triggered_alerts record."""
+    triggered_alert_id: Optional[uuid.UUID]          = None   # set by DB
+    alert_id:           uuid.UUID                    = Field(..., description="FK to configured_alerts.alert_id")
+    triggered_value:    Annotated[float, Field(example=162.4)]
+    sensor_id:          Optional[str]                = None
+    region:             Optional[str]                = None
+    triggered_at:       Optional[datetime]           = None
+    acknowledged_at:    Optional[datetime]           = None
+    acknowledged_by:    Optional[uuid.UUID]          = None
+    is_false_alarm:     bool                         = False
+    alert_severity:     Optional[TriggeredAlertSeverity] = None
+    is_public:          bool                         = False
+    status:             TriggeredAlertStatus         = TriggeredAlertStatus.ACTIVE
+ 
+    # UML method equivalents — computed from schema fields
     def get_alert_id(self) -> str:
-        return self.alertID
-
-    # UML: getSeverity()
-    def get_severity(self) -> int:
-        return self.severity.value
-
-    # UML: getStatus()
+        return str(self.alert_id)
+ 
+    def get_severity(self) -> str:
+        return self.alert_severity.value if self.alert_severity else "Unknown"
+ 
     def get_status(self) -> str:
-        return self.status.name
-
-    # UML: getActions()
+        return self.status.value
+ 
     def get_actions(self) -> str:
-        """
-        Returns a human-readable string describing available actions
-        for this alert given its current status.
-        """
         action_map = {
-            AlertStatus.PENDING_APPROVAL: "approve, reject",
-            AlertStatus.ACTIVE: "acknowledge, resolve",
-            AlertStatus.ACKNOWLEDGED: "resolve",
-            AlertStatus.RESOLVED: "none",
-            AlertStatus.REJECTED: "none",
+            TriggeredAlertStatus.ACTIVE:       "acknowledge, resolve, dismiss",
+            TriggeredAlertStatus.ACKNOWLEDGED: "resolve, dismiss",
+            TriggeredAlertStatus.RESOLVED:     "none",
+            TriggeredAlertStatus.DISMISSED:    "none",
         }
         return action_map.get(self.status, "none")
-
-
-class TriggeredAlertsResponse(TriggeredAlertsSchema):
-    """
-    TriggeredAlerts as returned to API consumers.
-    Adds the computed UML method outputs as response fields.
-    """
-    actions: str = ""
-
-    @classmethod
-    def from_schema(cls, alert: TriggeredAlertsSchema) -> "TriggeredAlertsResponse":
-        data = alert.model_dump()
-        data["actions"] = alert.get_actions()
-        return cls(**data)
-
-
+ 
+ 
+class AcknowledgeAlertRequest(BaseModel):
+    operator_id: uuid.UUID = Field(..., description="accountinfo_id of the acknowledging operator.")
+ 
+ 
+class AcknowledgeAlertResponse(BaseModel):
+    success:            bool
+    triggered_alert_id: uuid.UUID
+    operator_id:        uuid.UUID
+    message:            str = ""
+    presentation:       Optional["AlertPresentationSchema"] = None
+ 
+ 
 # ---------------------------------------------------------------------------
-# AlertPresentation — UML <<interface>>
-# UML fields / methods:
-#   - triggeredAlerts: TriggeredAlerts
-#   + update(AlertPresentation)
-# Modelled as a response schema representing the current presentation state.
+# AlertPresentation — interface state schema
 # ---------------------------------------------------------------------------
-
+ 
 class AlertPresentationSchema(BaseModel):
-    """
-    Represents the AlertPresentation interface state.
-    Holds the currently active/relevant alert for display purposes.
-    """
-    triggered_alert: Optional[TriggeredAlertsResponse] = None
-    presentation_message: Annotated[str, Field(
-        description="Human-readable message for the presentation layer.",
-        example="CRITICAL: Air quality threshold exceeded in Downtown.",
-    )]
-    last_updated: Annotated[str, Field(example="2025-06-01T14:30:05Z")]
-
-
+    """Current AlertPresentation state held by the abstraction layer."""
+    configured_alert:  Optional[ConfiguredAlertSchema]  = None
+    triggered_alert:   Optional[TriggeredAlertSchema]   = None
+    presentation_message: str = ""
+    last_updated:      str = ""
+ 
+ 
 # ---------------------------------------------------------------------------
-# ConfiguredAlertsDatabase — UML persistence class
-# UML: + TriggeredAlerts: TriggeredAlerts
+# Database query schemas
 # ---------------------------------------------------------------------------
-
-class ConfiguredAlertsDatabaseRecord(BaseModel):
-    """A single record as stored in ConfiguredAlertsDatabase."""
-    record_id: Annotated[str, Field(..., example="db-rec-001")]
-    stored_at: Annotated[str, Field(..., example="2025-06-01T14:30:01Z")]
-    alert: TriggeredAlertsSchema
-
-
+ 
 class AlertDatabaseQueryParams(BaseModel):
-    """Query filters for ConfiguredAlertsDatabase."""
-    region: Annotated[Optional[str], Field(example="Downtown")]
-    environmental_type: Optional[EnvironmentalType] = None
-    status: Optional[AlertStatus] = None
-    severity: Optional[AlertSeverity] = None
-    publicly_visible: Optional[bool] = None
-    limit: int = Field(100, ge=1, le=1000)
-
-
+    geographic_area:      Optional[str]                      = None
+    environmental_metric: Optional[EnvironmentalMetric]      = None
+    configured_status:    Optional[ConfiguredAlertStatus]    = None
+    triggered_status:     Optional[TriggeredAlertStatus]     = None
+    severity:             Optional[TriggeredAlertSeverity]   = None
+    is_public:            Optional[bool]                     = None
+    limit:                int = Field(100, ge=1, le=1000)
+ 
+ 
+class ConfiguredAlertsDatabaseRecord(BaseModel):
+    alert:      ConfiguredAlertSchema
+    triggered:  List[TriggeredAlertSchema] = []
+ 
+ 
 class AlertDatabaseQueryResponse(BaseModel):
     records: List[ConfiguredAlertsDatabaseRecord]
-    total: int
-
-
-# ---------------------------------------------------------------------------
-# AlertManagement operation request / response schemas
-# One schema pair per UML method.
-# ---------------------------------------------------------------------------
-
-# createAlertRule(alertID, environmentalType, Region, threshold, time, visibility)
-class CreateAlertRuleRequest(BaseModel):
-    alertID: Annotated[str, Field(example="alert-001")]
-    environmentalType: EnvironmentalType
-    region: Annotated[str, Field(example="Downtown")]
-    threshold: Annotated[float, Field(example=150.0)]
-    severity: AlertSeverity = AlertSeverity.MEDIUM
-    time: Annotated[str, Field( example="2025-06-01T14:30:00Z")]
-    publiclyVisible: bool = False
-
-
-class CreateAlertRuleResponse(BaseModel):
-    success: bool
-    alertID: Optional[str] = None
-    status: Optional[AlertStatus] = None
-    message: str = ""
-    presentation: Optional[AlertPresentationSchema] = None
-
-
-# sendForApproval(alertID): void
-class SendForApprovalResponse(BaseModel):
-    success: bool
-    alertID: str
-    message: str = ""
-    presentation: Optional[AlertPresentationSchema] = None
-
-
-# editAlertRule(alertID, updates): boolean
-class EditAlertRuleRequest(BaseModel):
-    """All fields optional — only supplied values are updated."""
-    threshold: Optional[float] = None
-    severity: Optional[AlertSeverity] = None
-    region: Optional[str] = None
-    time: Optional[str] = None
-    publiclyVisible: Optional[bool] = None
-
-
-class EditAlertRuleResponse(BaseModel):
-    success: bool
-    alertID: str
-    message: str = ""
-    presentation: Optional[AlertPresentationSchema] = None
-
-
-# deleteAlertRule(alertID): boolean
-class DeleteAlertRuleResponse(BaseModel):
-    success: bool
-    alertID: str
-    message: str = ""
-
-
-# acknowledgeAlert(alertID, operatorID): void
-class AcknowledgeAlertRequest(BaseModel):
-    operatorID: Annotated[str, Field(example="operator-001")]
-
-
-class AcknowledgeAlertResponse(BaseModel):
-    success: bool
-    alertID: str
-    operatorID: str
-    message: str = ""
-    presentation: Optional[AlertPresentationSchema] = None
-
-
-# approveAlertRule(alertID): boolean
-class ApproveAlertRuleResponse(BaseModel):
-    success: bool
-    alertID: str
-    forwarded_to_city: bool = False
-    message: str = ""
-    presentation: Optional[AlertPresentationSchema] = None
-
-
-# Reject (complement to approve — not in UML but needed for workflow)
-class RejectAlertRuleResponse(BaseModel):
-    success: bool
-    alertID: str
-    message: str = ""
-
-
+    total:   int
+ 
+ 
 # ---------------------------------------------------------------------------
 # Generic responses
 # ---------------------------------------------------------------------------
-
+ 
 class SuccessResponse(BaseModel):
     success: bool
     message: str = ""
-
-
+ 
+ 
 class ErrorResponse(BaseModel):
     detail: str
+ 
+ 
+# Resolve forward references
+CreateAlertRuleResponse.model_rebuild()
+EditAlertRuleResponse.model_rebuild()
+SendForApprovalResponse.model_rebuild()
+ApproveAlertRuleResponse.model_rebuild()
+AcknowledgeAlertResponse.model_rebuild()
