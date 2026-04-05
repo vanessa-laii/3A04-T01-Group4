@@ -30,44 +30,46 @@ from pydantic import BaseModel, EmailStr, Field
 class UserRole(str, Enum):
     """
     Roles a user account can hold within the SCEMAS system.
-    Determines which agents and operations are accessible.
+    Values match the role constraint in the Supabase account_information table.
     """
-    ADMIN = "admin"               # full system access
-    CITY_OPERATOR = "city_operator"   # city dashboard + alert management
-    ANALYST = "analyst"           # read-only data access
-    PUBLIC = "public"             # public feed only (minimal access)
+    SYSTEM_ADMINISTRATOR = "System Administrator"
+    CITY_OPERATOR        = "City Operator"
+    PUBLIC_USER          = "Public User"
 
 
 class AuditEventType(str, Enum):
-    LOGIN = "LOGIN"
-    LOGOUT = "LOGOUT"
-    CREATE_ACCOUNT = "CREATE_ACCOUNT"
-    EDIT_ACCOUNT = "EDIT_ACCOUNT"
-    VIEW_ACCOUNT = "VIEW_ACCOUNT"
-    LOGIN_FAILED = "LOGIN_FAILED"
+    LOGIN           = "LOGIN"
+    LOGOUT          = "LOGOUT"
+    CREATE_ACCOUNT  = "CREATE_ACCOUNT"
+    EDIT_ACCOUNT    = "EDIT_ACCOUNT"
+    VIEW_ACCOUNT    = "VIEW_ACCOUNT"
+    LOGIN_FAILED    = "LOGIN_FAILED"
     PASSWORD_CHANGE = "PASSWORD_CHANGE"
 
 
 class PageMessageType(str, Enum):
     """Classifies the type of feedback message shown in the presentation layer."""
     SUCCESS = "success"
-    ERROR = "error"
-    INFO = "info"
+    ERROR   = "error"
+    INFO    = "info"
 
 
 # ---------------------------------------------------------------------------
-# AccountInfo — core user data (stored in AccountDatabase)
+# AccountInfo — core user data (stored in AccountDatabase / account_information)
 # ---------------------------------------------------------------------------
 
 class AccountInfoSchema(BaseModel):
     """
-    Represents the AccountInfo object stored and retrieved by AccountDatabase.
-    Passwords are never returned in responses — only accepted in requests.
+    Represents one row in the account_information table.
+    Passwords are never returned in responses.
     """
-    userId: str = Field(..., example="user-001")
-    phoneNum: str = Field(..., example="+1-416-555-0100")
-    email: EmailStr = Field(..., example="operator@scemas.city")
-    role: UserRole = Field(..., example=UserRole.CITY_OPERATOR)
+    accountinfo_id: str = Field(..., example="uuid-here")
+    user_id:        str = Field(..., example="auth-uuid-here")
+    username:       str = Field(..., example="jdoe")
+    email:          EmailStr = Field(..., example="operator@scemas.city")
+    phone_number:   Optional[str] = Field(None, example="+1-416-555-0100")
+    role:           UserRole = Field(..., example=UserRole.CITY_OPERATOR)
+    is_active:      bool = Field(default=True)
 
 
 class AccountInfoResponse(AccountInfoSchema):
@@ -84,7 +86,7 @@ class AuditInformationSchema(BaseModel):
     Mirrors the UML AuditInformation class.
     Represents one auditable event associated with a user account.
     """
-    userId: str = Field(..., example="user-001")
+    userId:    str = Field(..., example="auth-uuid-here")
     EventType: AuditEventType
     EventDesc: str = Field(..., example="User logged in successfully.")
     EventDate: int = Field(
@@ -99,17 +101,17 @@ class AuditInformationSchema(BaseModel):
 # ---------------------------------------------------------------------------
 
 class LoginRequest(BaseModel):
-    userId: str = Field(..., example="user-001")
-    password: str = Field(..., min_length=8, example="SecurePass123!")
+    email:    EmailStr = Field(..., example="operator@scemas.city")
+    password: str      = Field(..., min_length=6, example="SecurePass123!")
 
 
 class LoginResponse(BaseModel):
-    success: bool
-    userId: Optional[str] = None
-    role: Optional[UserRole] = None
-    message: str = ""
-    # page: what the presentation layer should show next
-    page: Optional["PageDisplaySchema"] = None
+    success:      bool
+    user_id:      Optional[str] = None
+    access_token: Optional[str] = None   # Supabase JWT — stored by the frontend
+    role:         Optional[UserRole] = None
+    message:      str = ""
+    page:         Optional["PageDisplaySchema"] = None
 
 
 # ---------------------------------------------------------------------------
@@ -117,18 +119,18 @@ class LoginResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 class CreateAccountRequest(BaseModel):
-    userId: str = Field(..., example="user-002")
-    password: str = Field(..., min_length=8, example="SecurePass123!")
-    email: EmailStr = Field(..., example="newuser@scemas.city")
-    phone_num: str = Field(..., example="+1-416-555-0101")
-    role: UserRole = Field(..., example=UserRole.ANALYST)
+    username:     str      = Field(..., example="jdoe")
+    email:        EmailStr = Field(..., example="newuser@scemas.city")
+    password:     str      = Field(..., min_length=6, example="SecurePass123!")
+    phone_number: Optional[str] = Field(None, example="+1-416-555-0101")
+    role:         UserRole = Field(..., example=UserRole.CITY_OPERATOR)
 
 
 class CreateAccountResponse(BaseModel):
     success: bool
-    userId: Optional[str] = None
+    user_id: Optional[str] = None
     message: str = ""
-    page: Optional["PageDisplaySchema"] = None
+    page:    Optional["PageDisplaySchema"] = None
 
 
 # ---------------------------------------------------------------------------
@@ -138,92 +140,66 @@ class CreateAccountResponse(BaseModel):
 
 class ViewAccountResponse(BaseModel):
     account_info: AccountInfoResponse
-    page: Optional["PageDisplaySchema"] = None
+    page:         Optional["PageDisplaySchema"] = None
 
 
 # ---------------------------------------------------------------------------
 # EditAccount — UML: editAccount(password, email, phone-num): boolean
+# All fields optional — only supplied fields are updated.
 # ---------------------------------------------------------------------------
 
 class EditAccountRequest(BaseModel):
-    """
-    All fields are optional — only supplied fields are updated.
-    userId is not editable; it is taken from the path parameter.
-    """
-    password: Optional[str] = Field(None, min_length=8)
-    email: Optional[EmailStr] = None
-    phone_num: Optional[str] = None
+    username:     Optional[str]      = None
+    phone_number: Optional[str]      = None
+    role:         Optional[UserRole] = None
+    is_active:    Optional[bool]     = None
 
 
 class EditAccountResponse(BaseModel):
     success: bool
     message: str = ""
-    page: Optional["PageDisplaySchema"] = None
+    page:    Optional["PageDisplaySchema"] = None
 
 
 # ---------------------------------------------------------------------------
 # Presentation layer — AccountPageDisplay and AccountMessagesDisplay
-#
-# LoginPage, CreateProfilePage   → implement AccountPageDisplay
-# AccountError, AccountSuccess   → implement AccountMessagesDisplay
-#
-# These are modelled as a unified PageDisplaySchema so the API can return
-# a consistent structure regardless of which concrete page is active.
 # ---------------------------------------------------------------------------
 
 class PageDisplaySchema(BaseModel):
-    """
-    Unified representation of the presentation layer page/message state.
-    Maps to whichever concrete class (LoginPage, CreateProfilePage,
-    AccountError, AccountSuccess) is appropriate for the operation.
-    """
-    page_type: str = Field(
-        ...,
-        description=(
-            "Which concrete presentation class is active: "
-            "'login_page', 'create_profile_page', 'account_error', 'account_success'."
-        ),
-        example="account_success",
-    )
+    page_type:    str
     message_type: PageMessageType
-    message: str = Field(..., example="Account created successfully.")
+    message:      str
 
 
 # ---------------------------------------------------------------------------
 # AuditLogView — UML: displayMessage(): void, updatePage(): void
-# Interface for presenting audit log data
 # ---------------------------------------------------------------------------
 
 class AuditLogEntryResponse(BaseModel):
-    """Single audit log entry as returned by AuditLogView.displayMessage()."""
-    userId: str
+    userId:    str
     EventType: AuditEventType
     EventDesc: str
     EventDate: int
 
 
 class AuditLogPageResponse(BaseModel):
-    """
-    Paginated audit log view — AuditLogView.updatePage().
-    Returned by the /audit routes.
-    """
-    entries: List[AuditLogEntryResponse]
-    total: int
-    page: int = 1
+    entries:   List[AuditLogEntryResponse]
+    total:     int
+    page:      int = 1
     page_size: int = 20
 
 
 # ---------------------------------------------------------------------------
 # AccountDatabase operation schemas
-# Internal request/response types for database layer interactions.
 # ---------------------------------------------------------------------------
 
 class AccountDatabaseUpdateRequest(BaseModel):
     """Payload for AccountDatabase.updateAccountInfo()."""
-    userId: str
-    password: Optional[str] = None
-    email: Optional[EmailStr] = None
-    phone_num: Optional[str] = None
+    userId:       str
+    username:     Optional[str]      = None
+    phone_number: Optional[str]      = None
+    role:         Optional[UserRole] = None
+    is_active:    Optional[bool]     = None
 
 
 # ---------------------------------------------------------------------------
