@@ -17,7 +17,7 @@ services:
       - "8001:8000"
     env_file:
       - .env
-      - ./services/city/.env.local
+      # - ./services/city/.env.local
     volumes:
       - ./shared:/app/shared          # mount shared package into container
     depends_on:
@@ -33,7 +33,7 @@ services:
       - "8002:8000"
     env_file:
       - .env
-      - ./services/public/.env.local
+      # - ./services/public/.env.local
     volumes:
       - ./shared:/app/shared
     depends_on:
@@ -49,7 +49,7 @@ services:
       - "8003:8000"
     env_file:
       - .env
-      - ./services/data_processing/.env.local
+      # - ./services/data_processing/.env.local
     volumes:
       - ./shared:/app/shared
     depends_on:
@@ -65,7 +65,7 @@ services:
       - "8004:8000"
     env_file:
       - .env
-      - ./services/alerts/.env.local
+      # - ./services/alerts/.env.local
     volumes:
       - ./shared:/app/shared
     depends_on:
@@ -81,7 +81,7 @@ services:
       - "8005:8000"
     env_file:
       - .env
-      - ./services/accounts/.env.local
+      # - ./services/accounts/.env.local
     volumes:
       - ./shared:/app/shared
     depends_on:
