@@ -104,6 +104,22 @@ services:
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
+  # External Sensor Data 
+  # ---------------------------------------------------------------------------
+  sensor_data:
+    build: ../ExternalSensorData
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    environment:
+      - API_URL=http://data_processing:8000/api/v1/sensor/ingest
+      - MQTT_BROKER=localhost
+      - MQTT_PORT=9999
+    depends_on:
+      - data_processing
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
   # PostgreSQL database
   # ---------------------------------------------------------------------------
 #   db:

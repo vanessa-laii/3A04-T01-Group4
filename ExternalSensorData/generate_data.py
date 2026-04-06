@@ -1,16 +1,11 @@
 #!/usr/bin/env python3
 
 import json
-import math
 import random
 import sys
 
 CYCLE_SECONDS = 60
 OUTPUT_FILE = "sensor_data.txt"
-
-ALERT_START = 30
-ALERT_PEAK = 38
-ALERT_END = 48
 
 HAMILTON_LAT_MIN, HAMILTON_LAT_MAX = 43.13, 43.42
 HAMILTON_LON_MIN, HAMILTON_LON_MAX = -80.15, -79.64
@@ -69,7 +64,6 @@ SENSOR_DEFINITIONS = [
             "NoiseLevels": {"base": 69.0, "noise_std": 2.50},
             "ParticularMatter": {"base": 9.8, "noise_std": 1.00},
         },
-        "alerts": {},
     },
     {
         "sensorID": "SENSOR-DT-002",
@@ -83,7 +77,6 @@ SENSOR_DEFINITIONS = [
             "NoiseLevels": {"base": 63.0, "noise_std": 2.00},
             "ParticularMatter": {"base": 9.2, "noise_std": 0.90},
         },
-        "alerts": {},
     },
     {
         "sensorID": "SENSOR-DT-003",
@@ -96,9 +89,6 @@ SENSOR_DEFINITIONS = [
             "AirQuality": {"base": 40.0, "noise_std": 3.00},
             "NoiseLevels": {"base": 74.0, "noise_std": 3.00},
             "ParticularMatter": {"base": 11.5, "noise_std": 1.20},
-        },
-        "alerts": {
-            "NoiseLevels": {"alertValue": 94.0},
         },
     },
     {
@@ -113,9 +103,6 @@ SENSOR_DEFINITIONS = [
             "NoiseLevels": {"base": 74.0, "noise_std": 3.00},
             "ParticularMatter": {"base": 15.0, "noise_std": 1.60},
         },
-        "alerts": {
-            "Humidity": {"alertValue": 97.4},
-        },
     },
     {
         "sensorID": "SENSOR-HR-002",
@@ -128,9 +115,6 @@ SENSOR_DEFINITIONS = [
             "AirQuality": {"base": 55.0, "noise_std": 4.00},
             "NoiseLevels": {"base": 78.0, "noise_std": 3.50},
             "ParticularMatter": {"base": 17.5, "noise_std": 1.80},
-        },
-        "alerts": {
-            "AirQuality": {"alertValue": 178.0},
         },
     },
     {
@@ -145,9 +129,6 @@ SENSOR_DEFINITIONS = [
             "NoiseLevels": {"base": 76.0, "noise_std": 3.50},
             "ParticularMatter": {"base": 14.5, "noise_std": 1.50},
         },
-        "alerts": {
-            "ParticularMatter": {"alertValue": 67.3},
-        },
     },
     {
         "sensorID": "SENSOR-MT-001",
@@ -160,9 +141,6 @@ SENSOR_DEFINITIONS = [
             "AirQuality": {"base": 28.0, "noise_std": 2.00},
             "NoiseLevels": {"base": 50.0, "noise_std": 2.00},
             "ParticularMatter": {"base": 7.5, "noise_std": 0.90},
-        },
-        "alerts": {
-            "Temperature": {"alertValue": -3.2},
         },
     },
     {
@@ -177,7 +155,6 @@ SENSOR_DEFINITIONS = [
             "NoiseLevels": {"base": 52.0, "noise_std": 2.00},
             "ParticularMatter": {"base": 7.8, "noise_std": 0.90},
         },
-        "alerts": {},
     },
     {
         "sensorID": "SENSOR-MT-003",
@@ -191,7 +168,6 @@ SENSOR_DEFINITIONS = [
             "NoiseLevels": {"base": 55.0, "noise_std": 2.50},
             "ParticularMatter": {"base": 7.2, "noise_std": 0.85},
         },
-        "alerts": {},
     },
     {
         "sensorID": "SENSOR-EC-001",
@@ -205,7 +181,6 @@ SENSOR_DEFINITIONS = [
             "NoiseLevels": {"base": 58.0, "noise_std": 2.00},
             "ParticularMatter": {"base": 11.2, "noise_std": 1.20},
         },
-        "alerts": {},
     },
     {
         "sensorID": "SENSOR-EC-002",
@@ -219,7 +194,6 @@ SENSOR_DEFINITIONS = [
             "NoiseLevels": {"base": 62.0, "noise_std": 2.50},
             "ParticularMatter": {"base": 12.0, "noise_std": 1.30},
         },
-        "alerts": {},
     },
     {
         "sensorID": "SENSOR-EC-003",
@@ -233,7 +207,6 @@ SENSOR_DEFINITIONS = [
             "NoiseLevels": {"base": 56.0, "noise_std": 2.00},
             "ParticularMatter": {"base": 10.5, "noise_std": 1.10},
         },
-        "alerts": {},
     },
     {
         "sensorID": "SENSOR-WE-001",
@@ -247,7 +220,6 @@ SENSOR_DEFINITIONS = [
             "NoiseLevels": {"base": 54.0, "noise_std": 2.00},
             "ParticularMatter": {"base": 8.5, "noise_std": 0.90},
         },
-        "alerts": {},
     },
     {
         "sensorID": "SENSOR-WE-002",
@@ -261,7 +233,6 @@ SENSOR_DEFINITIONS = [
             "NoiseLevels": {"base": 51.0, "noise_std": 2.00},
             "ParticularMatter": {"base": 8.2, "noise_std": 0.90},
         },
-        "alerts": {},
     },
     {
         "sensorID": "SENSOR-WE-003",
@@ -275,7 +246,6 @@ SENSOR_DEFINITIONS = [
             "NoiseLevels": {"base": 53.0, "noise_std": 2.00},
             "ParticularMatter": {"base": 8.7, "noise_std": 0.90},
         },
-        "alerts": {},
     },
     {
         "sensorID": "SENSOR-AN-001",
@@ -289,7 +259,6 @@ SENSOR_DEFINITIONS = [
             "NoiseLevels": {"base": 46.0, "noise_std": 1.80},
             "ParticularMatter": {"base": 7.0, "noise_std": 0.80},
         },
-        "alerts": {},
     },
     {
         "sensorID": "SENSOR-AN-002",
@@ -303,7 +272,6 @@ SENSOR_DEFINITIONS = [
             "NoiseLevels": {"base": 44.0, "noise_std": 1.80},
             "ParticularMatter": {"base": 6.8, "noise_std": 0.80},
         },
-        "alerts": {},
     },
     {
         "sensorID": "SENSOR-AN-003",
@@ -317,53 +285,30 @@ SENSOR_DEFINITIONS = [
             "NoiseLevels": {"base": 45.0, "noise_std": 1.80},
             "ParticularMatter": {"base": 7.1, "noise_std": 0.80},
         },
-        "alerts": {},
     },
 ]
 
 
 def within_hamilton(lat: float, lon: float) -> bool:
-    return (HAMILTON_LAT_MIN <= lat <= HAMILTON_LAT_MAX
-            and HAMILTON_LON_MIN <= lon <= HAMILTON_LON_MAX)
+    return (HAMILTON_LAT_MIN <= lat <= HAMILTON_LAT_MAX and HAMILTON_LON_MIN <= lon <= HAMILTON_LON_MAX)
 
 
-def cosine_weight(progress: float) -> float:
-    return (1.0 - math.cos(progress * math.pi)) / 2.0
-
-
-def generate_value(base: float, noise_std: float, alert_value: float | None, tick: int) -> float:
-    if alert_value is not None and ALERT_START <= tick <= ALERT_END:
-        if tick <= ALERT_PEAK:
-            progress = (tick - ALERT_START) / max(1, ALERT_PEAK - ALERT_START)
-            weight = cosine_weight(progress)
-            val = base + (alert_value - base) * weight
-        else:
-            progress = (tick - ALERT_PEAK) / max(1, ALERT_END - ALERT_PEAK)
-            weight = cosine_weight(progress)
-            val = alert_value + (base - alert_value) * weight
-    else:
-        val = base
-
-    return round(val + random.gauss(0.0, noise_std), 2)
+def generate_value(base: float, noise_std: float) -> float:
+    return round(base + random.gauss(0.0, noise_std), 2)
 
 
 def build_record(sensor: dict, tick: int) -> dict:
     zone = ZONES[sensor["zoneKey"]]
     readings = {}
     for sensor_type, params in sensor["readings"].items():
-        alert_cfg = sensor["alerts"].get(sensor_type)
-        alert_value = alert_cfg["alertValue"] if alert_cfg else None
         readings[sensor_type] = {
             "sensorType": sensor_type,
-            "sensorData": generate_value(params["base"], params["noise_std"], alert_value, tick),
+            "sensorData": generate_value(params["base"], params["noise_std"]),
             "unit": SENSOR_UNITS[sensor_type],
         }
 
     return {
-        "sensorID": sensor["sensorID"],
-        "zoneID": zone["zoneID"],
-        "region": zone["region"],
-        "zone": zone["zoneName"],
+        "sensorID": sensor["sensorID"], "zoneID": zone["zoneID"], "region": zone["region"], "zone": zone["zoneName"],
         "latitude": sensor["latitude"],
         "longitude": sensor["longitude"],
         "tick": tick,
@@ -379,8 +324,7 @@ def main() -> None:
         sys.exit(1)
 
     print(f"GPS validation passed — all {len(SENSOR_DEFINITIONS)} sensors within Hamilton bounds.")
-    print(f"Generating {CYCLE_SECONDS} ticks x {len(SENSOR_DEFINITIONS)} sensors = "
-          f"{CYCLE_SECONDS * len(SENSOR_DEFINITIONS)} records ...")
+    print(f"Generating {CYCLE_SECONDS} ticks x {len(SENSOR_DEFINITIONS)} sensors = "f"{CYCLE_SECONDS * len(SENSOR_DEFINITIONS)} records ...")
 
     lines = []
     for tick in range(CYCLE_SECONDS):
