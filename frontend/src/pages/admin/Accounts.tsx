@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react'
 import { UserPlus, X, ToggleLeft, ToggleRight, Pencil } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
 import { backendFetch } from '../../lib/api'
 import Sidebar from '../../components/layout/Sidebar'
 import Header from '../../components/layout/Header'
 
 interface Operator {
   accountinfo_id: string
-  user_id: string
   username: string
   email: string
   phone_number: string | null
@@ -47,16 +45,16 @@ export default function Accounts() {
 
   async function fetchOperators() {
     setLoadingList(true)
-    const { data, error } = await supabase
-      .from('account_information')
-      .select('accountinfo_id, user_id, username, email, phone_number, role, is_active, created_at')
-      .order('created_at', { ascending: false })
-    if (!error && data) setOperators(data as Operator[])
+    const res = await backendFetch('/api/v1/accounts')
+    if (res.ok) {
+      const data = await res.json()
+      if (data.success) setOperators(data.accounts as Operator[])
+    }
     setLoadingList(false)
   }
 
   async function toggleActive(op: Operator) {
-    const res = await backendFetch(`/api/v1/accounts/${op.user_id}`, {
+    const res = await backendFetch(`/api/v1/accounts/${op.accountinfo_id}`, {
       method: 'PATCH',
       body: JSON.stringify({ is_active: !op.is_active }),
     })
@@ -110,7 +108,7 @@ export default function Accounts() {
     setError('')
     setLoading(true)
 
-    const res  = await backendFetch(`/api/v1/accounts/${editTarget.user_id}`, {
+    const res  = await backendFetch(`/api/v1/accounts/${editTarget.accountinfo_id}`, {
       method: 'PATCH',
       body: JSON.stringify({
         username:     editForm.username,
