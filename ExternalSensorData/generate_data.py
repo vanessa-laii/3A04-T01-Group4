@@ -13,9 +13,8 @@ HAMILTON_LON_MIN, HAMILTON_LON_MAX = -80.15, -79.64
 SENSOR_UNITS = {
     "Temperature": "°C",
     "Humidity": "%RH",
-    "AirQuality": "AQI",
-    "NoiseLevels": "dB",
-    "ParticularMatter": "µg/m³",
+    "Air Quality": "AQI",
+    "Noise Levels": "dB",
 }
 
 ZONES = {
@@ -60,9 +59,8 @@ SENSOR_DEFINITIONS = [
         "readings": {
             "Temperature": {"base": 9.2, "noise_std": 0.30},
             "Humidity": {"base": 64.0, "noise_std": 1.20},
-            "AirQuality": {"base": 35.0, "noise_std": 2.50},
-            "NoiseLevels": {"base": 69.0, "noise_std": 2.50},
-            "ParticularMatter": {"base": 9.8, "noise_std": 1.00},
+            "Air Quality": {"base": 35.0, "noise_std": 2.50},
+            "Noise Levels": {"base": 69.0, "noise_std": 2.50},
         },
     },
     {
@@ -73,9 +71,8 @@ SENSOR_DEFINITIONS = [
         "readings": {
             "Temperature": {"base": 9.0, "noise_std": 0.30},
             "Humidity": {"base": 66.0, "noise_std": 1.10},
-            "AirQuality": {"base": 33.0, "noise_std": 2.00},
-            "NoiseLevels": {"base": 63.0, "noise_std": 2.00},
-            "ParticularMatter": {"base": 9.2, "noise_std": 0.90},
+            "Air Quality": {"base": 33.0, "noise_std": 2.00},
+            "Noise Levels": {"base": 63.0, "noise_std": 2.00},
         },
     },
     {
@@ -86,9 +83,8 @@ SENSOR_DEFINITIONS = [
         "readings": {
             "Temperature": {"base": 9.3, "noise_std": 0.30},
             "Humidity": {"base": 63.0, "noise_std": 1.20},
-            "AirQuality": {"base": 40.0, "noise_std": 3.00},
-            "NoiseLevels": {"base": 74.0, "noise_std": 3.00},
-            "ParticularMatter": {"base": 11.5, "noise_std": 1.20},
+            "Air Quality": {"base": 40.0, "noise_std": 3.00},
+            "Noise Levels": {"base": 74.0, "noise_std": 3.00},
         },
     },
     {
@@ -99,9 +95,8 @@ SENSOR_DEFINITIONS = [
         "readings": {
             "Temperature": {"base": 8.0, "noise_std": 0.35},
             "Humidity": {"base": 74.0, "noise_std": 1.40},
-            "AirQuality": {"base": 50.0, "noise_std": 3.50},
-            "NoiseLevels": {"base": 74.0, "noise_std": 3.00},
-            "ParticularMatter": {"base": 15.0, "noise_std": 1.60},
+            "Air Quality": {"base": 50.0, "noise_std": 3.50},
+            "Noise Levels": {"base": 74.0, "noise_std": 3.00},
         },
     },
     {
@@ -112,9 +107,8 @@ SENSOR_DEFINITIONS = [
         "readings": {
             "Temperature": {"base": 8.2, "noise_std": 0.35},
             "Humidity": {"base": 72.0, "noise_std": 1.30},
-            "AirQuality": {"base": 55.0, "noise_std": 4.00},
-            "NoiseLevels": {"base": 78.0, "noise_std": 3.50},
-            "ParticularMatter": {"base": 17.5, "noise_std": 1.80},
+            "Air Quality": {"base": 55.0, "noise_std": 4.00},
+            "Noise Levels": {"base": 78.0, "noise_std": 3.50},
         },
     },
     {
@@ -125,9 +119,8 @@ SENSOR_DEFINITIONS = [
         "readings": {
             "Temperature": {"base": 7.9, "noise_std": 0.35},
             "Humidity": {"base": 76.0, "noise_std": 1.50},
-            "AirQuality": {"base": 48.0, "noise_std": 3.50},
-            "NoiseLevels": {"base": 76.0, "noise_std": 3.50},
-            "ParticularMatter": {"base": 14.5, "noise_std": 1.50},
+            "Air Quality": {"base": 48.0, "noise_std": 3.50},
+            "Noise Levels": {"base": 76.0, "noise_std": 3.50},
         },
     },
     {
@@ -138,9 +131,8 @@ SENSOR_DEFINITIONS = [
         "readings": {
             "Temperature": {"base": 6.8, "noise_std": 0.40},
             "Humidity": {"base": 72.0, "noise_std": 1.20},
-            "AirQuality": {"base": 28.0, "noise_std": 2.00},
-            "NoiseLevels": {"base": 50.0, "noise_std": 2.00},
-            "ParticularMatter": {"base": 7.5, "noise_std": 0.90},
+            "Air Quality": {"base": 28.0, "noise_std": 2.00},
+            "Noise Levels": {"base": 50.0, "noise_std": 2.00},
         },
     },
     {
@@ -151,9 +143,8 @@ SENSOR_DEFINITIONS = [
         "readings": {
             "Temperature": {"base": 7.1, "noise_std": 0.35},
             "Humidity": {"base": 70.0, "noise_std": 1.10},
-            "AirQuality": {"base": 29.0, "noise_std": 2.00},
-            "NoiseLevels": {"base": 52.0, "noise_std": 2.00},
-            "ParticularMatter": {"base": 7.8, "noise_std": 0.90},
+            "Air Quality": {"base": 29.0, "noise_std": 2.00},
+            "Noise Levels": {"base": 52.0, "noise_std": 2.00},
         },
     },
     {
@@ -164,9 +155,8 @@ SENSOR_DEFINITIONS = [
         "readings": {
             "Temperature": {"base": 7.4, "noise_std": 0.35},
             "Humidity": {"base": 68.0, "noise_std": 1.10},
-            "AirQuality": {"base": 27.0, "noise_std": 1.80},
-            "NoiseLevels": {"base": 55.0, "noise_std": 2.50},
-            "ParticularMatter": {"base": 7.2, "noise_std": 0.85},
+            "Air Quality": {"base": 27.0, "noise_std": 1.80},
+            "Noise Levels": {"base": 55.0, "noise_std": 2.50},
         },
     },
     {
@@ -177,9 +167,8 @@ SENSOR_DEFINITIONS = [
         "readings": {
             "Temperature": {"base": 10.1, "noise_std": 0.30},
             "Humidity": {"base": 62.0, "noise_std": 1.00},
-            "AirQuality": {"base": 32.0, "noise_std": 2.00},
-            "NoiseLevels": {"base": 58.0, "noise_std": 2.00},
-            "ParticularMatter": {"base": 11.2, "noise_std": 1.20},
+            "Air Quality": {"base": 32.0, "noise_std": 2.00},
+            "Noise Levels": {"base": 58.0, "noise_std": 2.00},
         },
     },
     {
@@ -190,9 +179,8 @@ SENSOR_DEFINITIONS = [
         "readings": {
             "Temperature": {"base": 9.8, "noise_std": 0.30},
             "Humidity": {"base": 63.0, "noise_std": 1.00},
-            "AirQuality": {"base": 34.0, "noise_std": 2.20},
-            "NoiseLevels": {"base": 62.0, "noise_std": 2.50},
-            "ParticularMatter": {"base": 12.0, "noise_std": 1.30},
+            "Air Quality": {"base": 34.0, "noise_std": 2.20},
+            "Noise Levels": {"base": 62.0, "noise_std": 2.50},
         },
     },
     {
@@ -203,9 +191,8 @@ SENSOR_DEFINITIONS = [
         "readings": {
             "Temperature": {"base": 10.3, "noise_std": 0.30},
             "Humidity": {"base": 61.0, "noise_std": 1.00},
-            "AirQuality": {"base": 30.0, "noise_std": 2.00},
-            "NoiseLevels": {"base": 56.0, "noise_std": 2.00},
-            "ParticularMatter": {"base": 10.5, "noise_std": 1.10},
+            "Air Quality": {"base": 30.0, "noise_std": 2.00},
+            "Noise Levels": {"base": 56.0, "noise_std": 2.00},
         },
     },
     {
@@ -216,9 +203,8 @@ SENSOR_DEFINITIONS = [
         "readings": {
             "Temperature": {"base": 8.9, "noise_std": 0.35},
             "Humidity": {"base": 69.5, "noise_std": 1.00},
-            "AirQuality": {"base": 28.0, "noise_std": 1.80},
-            "NoiseLevels": {"base": 54.0, "noise_std": 2.00},
-            "ParticularMatter": {"base": 8.5, "noise_std": 0.90},
+            "Air Quality": {"base": 28.0, "noise_std": 1.80},
+            "Noise Levels": {"base": 54.0, "noise_std": 2.00},
         },
     },
     {
@@ -229,9 +215,8 @@ SENSOR_DEFINITIONS = [
         "readings": {
             "Temperature": {"base": 8.7, "noise_std": 0.35},
             "Humidity": {"base": 71.0, "noise_std": 1.10},
-            "AirQuality": {"base": 27.0, "noise_std": 1.80},
-            "NoiseLevels": {"base": 51.0, "noise_std": 2.00},
-            "ParticularMatter": {"base": 8.2, "noise_std": 0.90},
+            "Air Quality": {"base": 27.0, "noise_std": 1.80},
+            "Noise Levels": {"base": 51.0, "noise_std": 2.00},
         },
     },
     {
@@ -242,9 +227,8 @@ SENSOR_DEFINITIONS = [
         "readings": {
             "Temperature": {"base": 9.1, "noise_std": 0.35},
             "Humidity": {"base": 68.0, "noise_std": 1.00},
-            "AirQuality": {"base": 29.0, "noise_std": 1.80},
-            "NoiseLevels": {"base": 53.0, "noise_std": 2.00},
-            "ParticularMatter": {"base": 8.7, "noise_std": 0.90},
+            "Air Quality": {"base": 29.0, "noise_std": 1.80},
+            "Noise Levels": {"base": 53.0, "noise_std": 2.00},
         },
     },
     {
@@ -255,9 +239,8 @@ SENSOR_DEFINITIONS = [
         "readings": {
             "Temperature": {"base": 8.5, "noise_std": 0.30},
             "Humidity": {"base": 64.0, "noise_std": 0.90},
-            "AirQuality": {"base": 25.0, "noise_std": 1.50},
-            "NoiseLevels": {"base": 46.0, "noise_std": 1.80},
-            "ParticularMatter": {"base": 7.0, "noise_std": 0.80},
+            "Air Quality": {"base": 25.0, "noise_std": 1.50},
+            "Noise Levels": {"base": 46.0, "noise_std": 1.80},
         },
     },
     {
@@ -268,9 +251,8 @@ SENSOR_DEFINITIONS = [
         "readings": {
             "Temperature": {"base": 8.6, "noise_std": 0.30},
             "Humidity": {"base": 63.0, "noise_std": 0.90},
-            "AirQuality": {"base": 24.0, "noise_std": 1.50},
-            "NoiseLevels": {"base": 44.0, "noise_std": 1.80},
-            "ParticularMatter": {"base": 6.8, "noise_std": 0.80},
+            "Air Quality": {"base": 24.0, "noise_std": 1.50},
+            "Noise Levels": {"base": 44.0, "noise_std": 1.80},
         },
     },
     {
@@ -281,9 +263,8 @@ SENSOR_DEFINITIONS = [
         "readings": {
             "Temperature": {"base": 8.4, "noise_std": 0.30},
             "Humidity": {"base": 65.0, "noise_std": 0.90},
-            "AirQuality": {"base": 26.0, "noise_std": 1.50},
-            "NoiseLevels": {"base": 45.0, "noise_std": 1.80},
-            "ParticularMatter": {"base": 7.1, "noise_std": 0.80},
+            "Air Quality": {"base": 26.0, "noise_std": 1.50},
+            "Noise Levels": {"base": 45.0, "noise_std": 1.80},
         },
     },
 ]

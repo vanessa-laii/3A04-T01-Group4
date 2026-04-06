@@ -24,14 +24,14 @@ def build_payload(record: dict) -> dict:
     return {
         "source_id": record["sensorID"],
         "sensor_data": {
-            "timestamp": timestamp,
-            "region": record["region"],
+            "recorded_at": timestamp,
+            "geographic_zone": record["region"],
             "gps_location": f"{record['latitude']},{record['longitude']}",
             "zone": record["zone"],
             "zoneID": record["zoneID"],
             "metrics": [
                 {
-                    "type": reading["sensorType"],
+                    "metric_type": reading["sensorType"],
                     "value": reading["sensorData"],
                     "unit": reading["unit"],
                 }
