@@ -13,9 +13,9 @@ from __future__ import annotations
 from typing import Optional
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 
-from app.controller import AccountManagementController
+from app.controller import AccountManagementController, _get_supabase
 from app.dependencies import get_account_management_controller
 from app.models import (
     AuditLogEntryResponse,
@@ -33,8 +33,30 @@ router = APIRouter()
 
 
 # ---------------------------------------------------------------------------
+# JWT verification dependency
+# Validates the Supabase JWT sent by the frontend in the Authorization header.
+# Returns the authenticated user's UUID.
+# ---------------------------------------------------------------------------
+
+def get_current_user_id(authorization: str = Header(...)) -> str:
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header.")
+    token = authorization[7:]
+    try:
+        sb = _get_supabase()
+        result = sb.auth.get_user(token)
+        if result.user is None:
+            raise HTTPException(status_code=401, detail="Invalid token.")
+        return result.user.id
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=401, detail=f"Token verification failed: {exc}")
+
+
+# ---------------------------------------------------------------------------
 # Authentication — AccountLogin
-# UML: login(userId, password): boolean
+# UML: login(email, password): boolean
 # ---------------------------------------------------------------------------
 
 @router.post(
@@ -43,26 +65,19 @@ router = APIRouter()
     status_code=status.HTTP_200_OK,
     tags=["Authentication"],
     summary="Login to the system",
-    description=(
-        "Validates credentials against AccountDatabase. On success, sets the "
-        "active session in the abstraction layer and returns the user's role. "
-        "The response includes a PageDisplaySchema indicating which "
-        "presentation layer page should be shown (LoginPage on failure, "
-        "account page on success)."
-    ),
 )
 async def login(
     request: LoginRequest,
-    controller: AccountManagementController = Depends(
-        get_account_management_controller
-    ),
+    controller: AccountManagementController = Depends(get_account_management_controller),
 ) -> LoginResponse:
     return await controller.login(request)
 
 
 # ---------------------------------------------------------------------------
 # Account creation — CreateAccount
-# UML: createAccount(userId, password, email, phone-num, role): boolean
+# UML: createAccount(username, password, email, phone-num, role): boolean
+# Protected: caller must be authenticated (any role can be verified, but
+# admin-only enforcement should be added in production).
 # ---------------------------------------------------------------------------
 
 @router.post(
@@ -71,17 +86,11 @@ async def login(
     status_code=status.HTTP_201_CREATED,
     tags=["Accounts"],
     summary="Create a new user account",
-    description=(
-        "Creates a new account in AccountDatabase and records a CREATE_ACCOUNT "
-        "audit event. Returns a CreateProfilePage presentation response on "
-        "success or an AccountError response on failure."
-    ),
 )
 async def create_account(
     request: CreateAccountRequest,
-    controller: AccountManagementController = Depends(
-        get_account_management_controller
-    ),
+    controller: AccountManagementController = Depends(get_account_management_controller),
+    _caller_id: str = Depends(get_current_user_id),
 ) -> CreateAccountResponse:
     return await controller.create_account(request)
 
@@ -97,30 +106,21 @@ async def create_account(
     status_code=status.HTTP_200_OK,
     tags=["Accounts"],
     summary="View an account",
-    description=(
-        "Retrieves AccountInfo from AccountDatabase for the given userId and "
-        "records a VIEW_ACCOUNT audit event. Returns an AccountPageDisplay "
-        "presentation response."
-    ),
 )
 async def view_account(
     user_id: str,
-    controller: AccountManagementController = Depends(
-        get_account_management_controller
-    ),
+    controller: AccountManagementController = Depends(get_account_management_controller),
+    _caller_id: str = Depends(get_current_user_id),
 ) -> ViewAccountResponse:
     try:
         return await controller.view_account(user_id)
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
 
 
 # ---------------------------------------------------------------------------
 # Edit account — EditAccount
-# UML: editAccount(password, email, phone-num): boolean
+# UML: editAccount(username, phone-num, role, is_active): boolean
 # ---------------------------------------------------------------------------
 
 @router.patch(
@@ -129,27 +129,18 @@ async def view_account(
     status_code=status.HTTP_200_OK,
     tags=["Accounts"],
     summary="Edit an existing account",
-    description=(
-        "Partially updates an account in AccountDatabase (password, email, "
-        "and/or phone number). Only supplied fields are modified. Records an "
-        "EDIT_ACCOUNT audit event and returns an AccountSuccess or "
-        "AccountError presentation response."
-    ),
 )
 async def edit_account(
     user_id: str,
     request: EditAccountRequest,
-    controller: AccountManagementController = Depends(
-        get_account_management_controller
-    ),
+    controller: AccountManagementController = Depends(get_account_management_controller),
+    _caller_id: str = Depends(get_current_user_id),
 ) -> EditAccountResponse:
     return await controller.edit_account(user_id, request)
 
 
 # ---------------------------------------------------------------------------
 # Audit Log — AuditLogView
-# UML: displayMessage(): void  →  /audit/display
-#      updatePage(): void      →  /audit  (paginated)
 # ---------------------------------------------------------------------------
 
 @router.get(
@@ -158,10 +149,6 @@ async def edit_account(
     status_code=status.HTTP_200_OK,
     tags=["Audit Log"],
     summary="Get paginated audit log (AuditLogView.updatePage)",
-    description=(
-        "Returns a paginated view of audit events from AuditLogData. "
-        "Optionally filter by userId. Maps to AuditLogView.updatePage()."
-    ),
 )
 async def get_audit_log(
     user_id: Optional[uuid.UUID] = Query(
@@ -186,17 +173,11 @@ async def get_audit_log(
     status_code=status.HTTP_200_OK,
     tags=["Audit Log"],
     summary="Display recent audit messages (AuditLogView.displayMessage)",
-    description=(
-        "Returns the most recent audit events from the in-memory abstraction "
-        "buffer — fast, no DB query. Maps to AuditLogView.displayMessage(). "
-        "Optionally filter by userId."
-    ),
 )
 async def display_audit_messages(
     user_id: Optional[uuid.UUID] = Query(None, example="user-001"),
     limit: int = Query(20, ge=1, le=50),
-    controller: AccountManagementController = Depends(
-        get_account_management_controller
-    ),
+    controller: AccountManagementController = Depends(get_account_management_controller),
+    _caller_id: str = Depends(get_current_user_id),
 ) -> list[AuditLogEntryResponse]:
     return await controller.get_audit_event_display(user_id=user_id, limit=limit)

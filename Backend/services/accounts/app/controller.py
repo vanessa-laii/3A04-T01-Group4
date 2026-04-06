@@ -3,23 +3,12 @@ Accounts Agent Service — AccountManagementController
 PAC Architecture: Control layer of the Accounts Agent.
 
 Implements the four core UML operations of AccountManagement:
-  login(userId, password)                            -> boolean
-  createAccount(userId, password, email, phone, role) -> boolean
-  viewAccount()                                      -> void
-  editAccount(password, email, phone-num)            -> boolean
+  login(email, password)                               -> boolean
+  createAccount(username, password, email, phone, role) -> boolean
+  viewAccount(user_id)                                 -> void
+  editAccount(username, phone, role, is_active)        -> boolean
 
-Also contains the concrete implementations of UML classes that are
-owned by / composed into AccountManagement:
-  AccountLogin      — encapsulates login logic
-  CreateAccount     — encapsulates account creation logic
-  ViewAccount       — encapsulates account retrieval logic
-  EditAccount       — encapsulates account update logic
-  AccountDatabase   — persistence layer (composes AccountInfo)
-  AuditLogData      — audit event persistence (composes AuditInformation)
-
-Presentation layer classes (LoginPage, CreateProfilePage, AccountError,
-AccountSuccess) are represented via PageDisplaySchema and produced by the
-AccountsAbstraction layer — the controller never constructs them directly.
+AccountDatabase and AuditLogData are now backed by Supabase.
 """
 
 from __future__ import annotations
@@ -58,6 +47,17 @@ from app.models import (
 logger = logging.getLogger(__name__)
  
  
+# ---------------------------------------------------------------------------
+# Supabase client — singleton with service role key
+# ---------------------------------------------------------------------------
+
+@lru_cache(maxsize=1)
+def _get_supabase() -> Client:
+    url = os.environ["SUPABASE_URL"]
+    key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+    return create_client(url, key)
+
+
 # ---------------------------------------------------------------------------
 # AccountDatabase
 # ---------------------------------------------------------------------------
@@ -412,7 +412,7 @@ class AccountManagementController:
         self._abstraction    = AccountsAbstraction()
  
     # -----------------------------------------------------------------------
-    # UML: login(userId, password): boolean
+    # UML: login(email, password): boolean
     # -----------------------------------------------------------------------
  
     async def login(self, request: LoginRequest) -> LoginResponse:
@@ -439,7 +439,7 @@ class AccountManagementController:
         )
  
     # -----------------------------------------------------------------------
-    # UML: createAccount(userId, password, email, phone-num, role): boolean
+    # UML: createAccount(...)
     # -----------------------------------------------------------------------
  
     async def create_account(
@@ -471,7 +471,7 @@ class AccountManagementController:
         )
  
     # -----------------------------------------------------------------------
-    # UML: viewAccount(): void
+    # UML: viewAccount()
     # -----------------------------------------------------------------------
  
     async def view_account(self, username: str) -> ViewAccountResponse:
@@ -485,7 +485,7 @@ class AccountManagementController:
         return ViewAccountResponse(account_info=account_response, page=page)
  
     # -----------------------------------------------------------------------
-    # UML: editAccount(password, email, phone-num): boolean
+    # UML: editAccount(...)
     # -----------------------------------------------------------------------
  
     async def edit_account(

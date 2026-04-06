@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { backendFetch } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import Sidebar from '../components/layout/Sidebar'
 import Header from '../components/layout/Header'
@@ -27,19 +28,15 @@ export default function Profile() {
     if (!profile) return
     setInfoLoading(true)
 
-    const { error } = await supabase
-      .from('account_information')
-      .update({
-        username,
-        phone_number: phone || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('accountinfo_id', profile.accountinfo_id)
-
+    const res  = await backendFetch(`/api/v1/accounts/${profile.user_id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ username, phone_number: phone || null }),
+    })
+    const data = await res.json()
     setInfoLoading(false)
 
-    if (error) {
-      setInfoError(error.message)
+    if (!res.ok || !data.success) {
+      setInfoError(data?.message ?? 'Failed to update profile')
       return
     }
 

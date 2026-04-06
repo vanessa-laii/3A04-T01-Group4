@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { UserPlus, X, ToggleLeft, ToggleRight, Pencil } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { backendFetch } from '../../lib/api'
 import Sidebar from '../../components/layout/Sidebar'
 import Header from '../../components/layout/Header'
 
 interface Operator {
   accountinfo_id: string
+  user_id: string
   username: string
   email: string
   phone_number: string | null
@@ -47,18 +49,18 @@ export default function Accounts() {
     setLoadingList(true)
     const { data, error } = await supabase
       .from('account_information')
-      .select('accountinfo_id, username, email, phone_number, role, is_active, created_at')
+      .select('accountinfo_id, user_id, username, email, phone_number, role, is_active, created_at')
       .order('created_at', { ascending: false })
     if (!error && data) setOperators(data as Operator[])
     setLoadingList(false)
   }
 
   async function toggleActive(op: Operator) {
-    const { error } = await supabase
-      .from('account_information')
-      .update({ is_active: !op.is_active })
-      .eq('accountinfo_id', op.accountinfo_id)
-    if (!error) setOperators((prev) =>
+    const res = await backendFetch(`/api/v1/accounts/${op.user_id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ is_active: !op.is_active }),
+    })
+    if (res.ok) setOperators((prev) =>
       prev.map((o) => o.accountinfo_id === op.accountinfo_id ? { ...o, is_active: !o.is_active } : o)
     )
   }
@@ -68,14 +70,21 @@ export default function Accounts() {
     setError('')
     setLoading(true)
 
-    const { data, error: fnError } = await supabase.functions.invoke('create-operator', {
-      body: createForm,
+    const res  = await backendFetch('/api/v1/accounts', {
+      method: 'POST',
+      body: JSON.stringify({
+        username:     createForm.username,
+        email:        createForm.email,
+        password:     createForm.password,
+        phone_number: createForm.phone_number || null,
+        role:         createForm.role,
+      }),
     })
-
+    const data = await res.json()
     setLoading(false)
 
-    if (fnError || data?.error) {
-      setError(data?.error ?? fnError?.message ?? 'Failed to create account')
+    if (!res.ok || !data.success) {
+      setError(data?.message ?? 'Failed to create account')
       return
     }
 
@@ -101,20 +110,19 @@ export default function Accounts() {
     setError('')
     setLoading(true)
 
-    const { error } = await supabase
-      .from('account_information')
-      .update({
-        username: editForm.username,
+    const res  = await backendFetch(`/api/v1/accounts/${editTarget.user_id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        username:     editForm.username,
         phone_number: editForm.phone_number || null,
-        role: editForm.role,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('accountinfo_id', editTarget.accountinfo_id)
-
+        role:         editForm.role,
+      }),
+    })
+    const data = await res.json()
     setLoading(false)
 
-    if (error) {
-      setError(error.message)
+    if (!res.ok || !data.success) {
+      setError(data?.message ?? 'Failed to update account')
       return
     }
 
