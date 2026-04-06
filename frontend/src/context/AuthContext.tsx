@@ -84,40 +84,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // }
 
   async function signIn(email: string, password: string): Promise<{ error: string | null }> {
-  const username = email.split('@')[0];
-  try {
-    const response = await fetch('http://localhost:8005/api/v1/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, password }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      return { error: errorData.detail || 'Invalid username or password.' };
-    }
-
-    const data = await response.json();
-
-    if (data.success) {
-      // Map your backend response to your React state
-      setUser({ id: data.accountinfo_id, email: username , app_metadata: {}, user_metadata: {}, aud: "authenticated", created_at: ""});
-      setProfile({
-        role: data.role,
-        message: data.message,
-        ...data.page
+    try {
+      console.log(email)
+      console.log(password)
+      const response = await fetch('http://localhost:8005/api/v1/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username:email, password:password }),
       });
-      return { error: null };
-    } else {
-      return { error: data.message || 'Login failed.' };
+
+      console.log(response)
+
+      // if (!response.ok) {
+      //   const errorData = await response.json();
+      //   return { error: errorData.detail || 'Invalid username or password.' };
+      // }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Map your backend response to your React state
+        setUser({ id: data.accountinfo_id, email: email , app_metadata: {}, user_metadata: {}, aud: "authenticated", created_at: ""});
+        setProfile({
+          role: data.role,
+          message: data.message,
+          ...data.page
+        });
+        return { error: null };
+      } else {
+        return { error: data.message || 'Login failed.' };
+      }
+    } catch (err) {
+      console.error('Connection error:', err);
+      return { error: 'Could not connect to the authentication service.' };
     }
-  } catch (err) {
-    console.error('Connection error:', err);
-    return { error: 'Could not connect to the authentication service.' };
   }
-}
 
   async function signOut() {
     await supabase.auth.signOut()

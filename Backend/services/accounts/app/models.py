@@ -133,6 +133,7 @@ class LoginResponse(BaseModel):
     success:        bool
     accountinfo_id: Optional[uuid.UUID] = None
     username:       Optional[str] = None
+    email:          Optional[str] = None
     role:           Optional[UserRole] = None
     message:        str = ""
     page:           Optional["PageDisplaySchema"] = None

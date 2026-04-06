@@ -45,17 +45,6 @@ from app.models import (
 )
  
 logger = logging.getLogger(__name__)
- 
- 
-# ---------------------------------------------------------------------------
-# Supabase client — singleton with service role key
-# ---------------------------------------------------------------------------
-
-@lru_cache(maxsize=1)
-def _get_supabase() -> Client:
-    url = os.environ["SUPABASE_URL"]
-    key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
-    return create_client(url, key)
 
 
 # ---------------------------------------------------------------------------
@@ -84,6 +73,17 @@ class AccountDatabase:
         result = await self._session.execute(
             select(AccountInformation).where(
                 AccountInformation.username == username
+            )
+        )
+        return result.scalar_one_or_none()
+    
+    async def retrieve_by_email(
+        self, email: str
+    ) -> Optional[AccountInformation]:
+        """SELECT * FROM account_information WHERE email = :email"""
+        result = await self._session.execute(
+            select(AccountInformation).where(
+                AccountInformation.email == email
             )
         )
         return result.scalar_one_or_none()
@@ -176,7 +176,11 @@ class AccountDatabase:
         Returns the ORM row if credentials are valid, None otherwise.
         Also updates last_login on success.
         """
-        row = await self.retrieve_by_username(username)
+        if '@' in username:
+            row = await self.retrieve_by_email(username)
+        else:
+            row = await self.retrieve_by_username(username)
+
         if row is None:
             return None
         if row.password_hash != _hash_password(password):
@@ -426,6 +430,7 @@ class AccountManagementController:
                 success=True,
                 accountinfo_id=row.accountinfo_id,
                 username=row.username,
+                email=row.email,
                 role=role,
                 message="Login successful.",
                 page=page,
