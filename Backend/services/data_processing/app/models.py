@@ -13,6 +13,7 @@ The hierarchy mirrors the UML directly:
 from __future__ import annotations
  
 import uuid
+import uuid
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Annotated
@@ -55,11 +56,11 @@ class ProcessingStatus(str, Enum):
  
 class SensorMetadataSchema(BaseModel):
     sensor_id:            str
-    sensor_name:          Annotated[str, Field(example="AQI Sensor Node 042")]
-    geographic_zone:      Annotated[str, Field(example="Downtown")]
+    sensor_name:          Annotated[str  , Field(example="AQI Sensor Node 042")]
+    geographic_zone:      Annotated[str  , Field(example="Downtown")]
     latitude:             Annotated[float, Field(example=43.6532)]
     longitude:            Annotated[float, Field(example=-79.3832)]
-    sensor_type:          Annotated[str, Field(example="Air Quality")]
+    sensor_type:          Annotated[str  , Field(example="Air Quality")]
     location_description: Optional[str]      = None
     installation_date:    Optional[datetime] = None
     is_active:            bool               = True
@@ -168,10 +169,26 @@ class SensorDatabaseQueryResponse(BaseModel):
 # Pipeline result
 # ---------------------------------------------------------------------------
  
+class TriggeredAlertRecord(BaseModel):
+    """
+    Describes a single triggered_alerts row created during run_pipeline().
+    Included in PipelineResult so callers know which rules fired.
+    """
+    alert_id:        uuid.UUID
+    alert_name:      str
+    environmental_metric: str
+    geographic_area: str
+    threshold_value: float
+    triggered_value: float
+    severity:        str
+    is_public:       bool
+ 
+ 
 class PipelineResult(BaseModel):
     source_id:          str
     status:             ProcessingStatus
     rows_inserted:      int = 0            # number of time_series rows created
+    alerts_triggered:   List[TriggeredAlertRecord] = []  # rules that fired
     forwarded_to_city:  bool = False
     validation_errors:  List[str] = []
     message:            str = ""

@@ -24,14 +24,14 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Annotated
+from typing import Any, Dict, List, Optional
  
 import httpx
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
  
 from app.abstraction import DataAbstraction
-from app.orm_models import SensorMetadata, TimeSeriesSensorData
+from app.orm_models import SensorMetadata, TimeSeriesSensorData, ConfiguredAlerts, TriggeredAlerts
 from app.models import (
     DataQualityFlag,
     LocationResponse,
@@ -44,6 +44,7 @@ from app.models import (
     SensorDatabaseQueryResponse,
     SensorMetadataSchema,
     TimeSeriesReadingSchema,
+    TriggeredAlertRecord,
 )
  
 logger = logging.getLogger(__name__)
@@ -187,8 +188,202 @@ class SensorDatabase:
  
  
 # ---------------------------------------------------------------------------
-# DataProcessingController — Control layer
+# AlertRuleChecker
+# Compares each reading in a SensorDataSchema against all approved active
+# alert rules for that geographic zone and metric type.
+# Inserts a row into triggered_alerts for every rule whose threshold is
+# crossed, then returns a list of TriggeredAlertRecord objects so
+# run_pipeline() can include them in the PipelineResult.
 # ---------------------------------------------------------------------------
+ 
+class AlertRuleChecker:
+    """
+    Threshold evaluation step in the data processing pipeline.
+ 
+    Responsibilities:
+    - Fetch all approved, active ConfiguredAlerts rules that match the
+      incoming reading's geographic_zone and metric_type.
+    - For each matching rule, compare the reading value against
+      threshold_value (minimum) and threshold_value_max (maximum, optional).
+    - If a threshold is crossed, INSERT a row into triggered_alerts and
+      return a TriggeredAlertRecord describing the event.
+ 
+    Severity is assigned based on how far the reading exceeds the threshold:
+      < 10% over  → Low
+      10–25% over → Medium
+      25–50% over → High
+      > 50% over  → Critical
+    For range rules (threshold_value_max set), any reading outside the
+    range is treated as a threshold breach, using the distance from the
+    nearer boundary for severity calculation.
+ 
+    This class only writes to triggered_alerts — it never modifies
+    configured_alerts.
+    """
+ 
+    def __init__(self, session: AsyncSession):
+        self._session = session
+ 
+    async def check_and_trigger(
+        self,
+        sensor_data: SensorDataSchema,
+    ) -> List[TriggeredAlertRecord]:
+        """
+        Main entry point called from run_pipeline() after importDataDB().
+ 
+        For each metric reading in sensor_data, fetches matching approved
+        rules and evaluates thresholds. Returns a list of
+        TriggeredAlertRecord for every rule that fired.
+        """
+        triggered: List[TriggeredAlertRecord] = []
+ 
+        for reading in sensor_data.readings:
+            rules = await self._get_matching_rules(
+                geographic_area=sensor_data.geographic_zone,
+                environmental_metric=reading.metric_type.value,
+            )
+ 
+            for rule in rules:
+                breach_value = self._evaluate_threshold(
+                    value=reading.metric_value,
+                    threshold_min=rule.threshold_value,
+                    threshold_max=rule.threshold_value_max,
+                )
+                if breach_value is None:
+                    continue  # reading is within acceptable range
+ 
+                severity = self._calculate_severity(
+                    value=reading.metric_value,
+                    threshold=rule.threshold_value,
+                    threshold_max=rule.threshold_value_max,
+                )
+                is_public = rule.alert_visibility == "Public Facing"
+ 
+                row = TriggeredAlerts(
+                    alert_id=rule.alert_id,
+                    triggered_value=reading.metric_value,
+                    sensor_id=sensor_data.sensor_id,
+                    region=sensor_data.geographic_zone,
+                    alert_severity=severity,
+                    is_public=is_public,
+                    status="active",
+                )
+                self._session.add(row)
+ 
+                triggered.append(
+                    TriggeredAlertRecord(
+                        alert_id=rule.alert_id,
+                        alert_name=rule.alert_name,
+                        environmental_metric=rule.environmental_metric,
+                        geographic_area=rule.geographic_area,
+                        threshold_value=rule.threshold_value,
+                        triggered_value=reading.metric_value,
+                        severity=severity,
+                        is_public=is_public,
+                    )
+                )
+                logger.warning(
+                    "Alert triggered: rule='%s' metric=%s value=%.2f "
+                    "threshold=%.2f zone=%s severity=%s",
+                    rule.alert_name,
+                    rule.environmental_metric,
+                    reading.metric_value,
+                    rule.threshold_value,
+                    sensor_data.geographic_zone,
+                    severity,
+                )
+ 
+        if triggered:
+            await self._session.commit()
+ 
+        return triggered
+ 
+    async def _get_matching_rules(
+        self,
+        geographic_area: str,
+        environmental_metric: str,
+    ) -> List[ConfiguredAlerts]:
+        """
+        SELECT approved, active rules matching this zone and metric type.
+        A rule matches if its geographic_area equals the reading's zone
+        AND its environmental_metric equals the reading's metric type.
+        """
+        result = await self._session.execute(
+            select(ConfiguredAlerts).where(
+                and_(
+                    ConfiguredAlerts.status == "approved",
+                    ConfiguredAlerts.is_active == True,
+                    ConfiguredAlerts.geographic_area == geographic_area,
+                    ConfiguredAlerts.environmental_metric == environmental_metric,
+                )
+            )
+        )
+        return list(result.scalars().all())
+ 
+    @staticmethod
+    def _evaluate_threshold(
+        value: float,
+        threshold_min: float,
+        threshold_max: Optional[float],
+    ) -> Optional[float]:
+        """
+        Returns the breaching value if the reading crosses a threshold,
+        or None if the reading is within acceptable limits.
+ 
+        For minimum-only rules (threshold_max is None):
+          Breaches when value > threshold_min.
+ 
+        For range rules (threshold_max is set):
+          Breaches when value < threshold_min OR value > threshold_max.
+        """
+        if threshold_max is not None:
+            if value < threshold_min or value > threshold_max:
+                return value
+            return None
+        if value > threshold_min:
+            return value
+        return None
+ 
+    @staticmethod
+    def _calculate_severity(
+        value: float,
+        threshold: float,
+        threshold_max: Optional[float],
+    ) -> str:
+        """
+        Assign severity based on how far the reading exceeds the threshold.
+ 
+        For range rules, use the distance from the nearer boundary.
+        For minimum rules, use the percentage above the threshold.
+ 
+          < 10% over  → Low
+          10–25% over → Medium
+          25–50% over → High
+          > 50% over  → Critical
+        """
+        if threshold == 0:
+            return "High"
+ 
+        if threshold_max is not None:
+            # Distance from the nearer boundary as % of the range
+            range_size = threshold_max - threshold
+            if range_size <= 0:
+                return "Medium"
+            if value > threshold_max:
+                excess = value - threshold_max
+            else:
+                excess = threshold - value
+            pct = (excess / range_size) * 100
+        else:
+            pct = ((value - threshold) / abs(threshold)) * 100
+ 
+        if pct < 10:
+            return "Low"
+        if pct < 25:
+            return "Medium"
+        if pct < 50:
+            return "High"
+        return "Critical"
  
 class DataProcessingController:
     """
@@ -204,11 +399,12 @@ class DataProcessingController:
         city_service_url: str,
         http_client: httpx.AsyncClient,
     ):
-        self._database    = SensorDatabase(session)
-        self._external    = ExternalSensorData()
-        self._abstraction = DataAbstraction()
-        self._city_url    = city_service_url
-        self._http_client = http_client
+        self._database      = SensorDatabase(session)
+        self._alert_checker = AlertRuleChecker(session)
+        self._external      = ExternalSensorData()
+        self._abstraction   = DataAbstraction()
+        self._city_url      = city_service_url
+        self._http_client   = http_client
  
     # -----------------------------------------------------------------------
     # UML: processJSONData(JSONData) → SensorData
@@ -219,69 +415,69 @@ class DataProcessingController:
         Parse raw sensor JSON into a SensorDataSchema (grouped view).
         Raises ValueError with descriptive messages on validation failure.
         """
-        data = raw_payload.sensor_data
+        data   = raw_payload.sensor_data
         errors: List[str] = []
-
-        recorded_at_raw = data.get("recorded_at")
-        geographic_zone = data.get("geographic_zone")
-        raw_metrics = data.get("metrics", [])
-
-        if recorded_at_raw is None:
+ 
+        recorded_at_raw  = data.get("recorded_at")
+        geographic_zone  = data.get("geographic_zone")
+        raw_metrics      = data.get("metrics", [])
+ 
+        if not recorded_at_raw:
             errors.append("Missing field: 'recorded_at'")
-        if not isinstance(geographic_zone, str):
-            errors.append("Field 'geographic_zone' must be a non-empty string")
+        if not geographic_zone:
+            errors.append("Missing field: 'geographic_zone'")
         if not raw_metrics:
             errors.append("Missing or empty field: 'metrics'")
-
+ 
         if errors:
             raise ValueError(f"Invalid sensor payload: {'; '.join(errors)}")
-
-        recorded_at: datetime
+ 
+        # Parse recorded_at
         try:
             if isinstance(recorded_at_raw, datetime):
                 recorded_at = recorded_at_raw
-            elif isinstance(recorded_at_raw, str):
-                # Safe to call .replace() now because we confirmed it's a str
-                iso_string = recorded_at_raw.replace("Z", "+00:00")
-                recorded_at = datetime.fromisoformat(iso_string)
             else:
-                raise ValueError("Must be a string or datetime object")
-        except (ValueError, AttributeError, TypeError) as e:
+                recorded_at_raw = str(recorded_at_raw)
+                recorded_at = datetime.fromisoformat(
+                    recorded_at_raw.replace("Z", "+00:00")
+                )
+        except (ValueError, AttributeError):
             raise ValueError(f"Invalid 'recorded_at' format: '{recorded_at_raw}'")
-
+ 
+        # Parse metrics
         readings: List[TimeSeriesReadingSchema] = []
         for i, raw_m in enumerate(raw_metrics):
-            # Ensure raw_m is a dict before calling .get()
-            if not isinstance(raw_m, dict):
-                errors.append(f"Metric[{i}]: Expected dictionary, got {type(raw_m).__name__}")
-                continue
-
             raw_type = raw_m.get("metric_type") or raw_m.get("type")
-            value = raw_m.get("value")
-            unit = str(raw_m.get("unit", ""))
-
+            value    = raw_m.get("value")
+            unit     = raw_m.get("unit", "")
+ 
             if raw_type is None or value is None:
                 errors.append(f"Metric[{i}]: missing 'metric_type' or 'value'.")
                 continue
-
+ 
             try:
                 metric_type = MetricType(raw_type)
-                readings.append(
-                    TimeSeriesReadingSchema(
-                        sensor_id=raw_payload.source_id,
-                        metric_type=metric_type,
-                        metric_value=float(value),
-                        unit=unit,
-                        recorded_at=recorded_at,
-                        geographic_zone=str(geographic_zone), # Explicit cast for type safety
-                    )
+            except ValueError:
+                errors.append(
+                    f"Metric[{i}]: unknown metric_type '{raw_type}'. "
+                    f"Valid: {[e.value for e in MetricType]}"
                 )
-            except (ValueError, TypeError):
-                errors.append(f"Metric[{i}]: Invalid type or value.")
-
+                continue
+ 
+            readings.append(
+                TimeSeriesReadingSchema(
+                    sensor_id=raw_payload.source_id,
+                    metric_type=metric_type,
+                    metric_value=float(value),
+                    unit=unit,
+                    recorded_at=recorded_at,
+                    geographic_zone=str(geographic_zone),
+                )
+            )
+ 
         if errors:
             raise ValueError(f"Metric parsing errors: {'; '.join(errors)}")
-
+ 
         return SensorDataSchema(
             sensor_id=raw_payload.source_id,
             geographic_zone=str(geographic_zone),
@@ -388,14 +584,20 @@ class DataProcessingController:
             self._abstraction.record_result(result)
             return result
  
+        # Check readings against approved alert rules and create
+        # triggered_alerts rows for any threshold crossings
+        alerts_triggered = await self._alert_checker.check_and_trigger(sensor_data)
+ 
         forwarded = await self.send_to_controller(sensor_data)
         result = PipelineResult(
             source_id=raw_payload.source_id,
             status=ProcessingStatus.FORWARDED if forwarded else ProcessingStatus.STORED,
             rows_inserted=rows_inserted,
+            alerts_triggered=alerts_triggered,
             forwarded_to_city=forwarded,
             message=(
                 f"Pipeline complete. {rows_inserted} row(s) stored."
+                + (f" {len(alerts_triggered)} alert(s) triggered." if alerts_triggered else "")
                 + (" Forwarded to City agent." if forwarded else "")
             ),
         )
