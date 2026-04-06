@@ -37,6 +37,7 @@ from app.models import (
     CreateAccountResponse,
     EditAccountRequest,
     EditAccountResponse,
+    ListAccountsResponse,
     LoginRequest,
     LoginResponse,
     UserRole,
@@ -123,6 +124,10 @@ class AccountDatabase:
         old_values: Dict[str, Any] = {}
         new_values: Dict[str, Any] = {}
  
+        if request.username:
+            old_values["username"] = row.username
+            row.username = request.username
+            new_values["username"] = request.username
         if request.password:
             old_values["password_hash"] = "REDACTED"
             row.password_hash = _hash_password(request.password)
@@ -135,6 +140,14 @@ class AccountDatabase:
             old_values["phone_number"] = row.phone_number
             row.phone_number = request.phone_number
             new_values["phone_number"] = request.phone_number
+        if request.role is not None:
+            old_values["role"] = row.role
+            row.role = request.role
+            new_values["role"] = request.role
+        if request.is_active is not None:
+            old_values["is_active"] = row.is_active
+            row.is_active = request.is_active
+            new_values["is_active"] = request.is_active
  
         row.updated_at = datetime.now(timezone.utc)
         await self._session.commit()
@@ -190,6 +203,13 @@ class AccountDatabase:
         await self._session.commit()
         return row
  
+    async def retrieve_all(self) -> List[AccountInformation]:
+        """SELECT * FROM account_information ORDER BY created_at DESC"""
+        result = await self._session.execute(
+            select(AccountInformation).order_by(AccountInformation.created_at.desc())
+        )
+        return list(result.scalars().all())
+
     async def user_exists(self, username: str) -> bool:
         row = await self.retrieve_by_username(username)
         return row is not None
@@ -362,6 +382,9 @@ class EditAccount:
  
         old_snap: Dict[str, Any] = {}
         new_snap: Dict[str, Any] = {}
+        if request.username:
+            old_snap["username"] = row.username
+            new_snap["username"] = request.username
         if request.email:
             old_snap["email"] = row.email
             new_snap["email"] = request.email
@@ -371,12 +394,21 @@ class EditAccount:
         if request.password:
             old_snap["password_hash"] = "REDACTED"
             new_snap["password_hash"] = "REDACTED"
- 
+        if request.role is not None:
+            old_snap["role"] = row.role
+            new_snap["role"] = request.role.value
+        if request.is_active is not None:
+            old_snap["is_active"] = row.is_active
+            new_snap["is_active"] = request.is_active
+
         db_request = AccountDatabaseUpdateRequest(
             accountinfo_id=accountinfo_id,
+            username=request.username,
             password=request.password,
             email=request.email,
             phone_number=request.phone_number,
+            role=request.role.value if request.role is not None else None,
+            is_active=request.is_active,
         )
         success = await self._db.update_account_info(db_request)
  
@@ -476,17 +508,28 @@ class AccountManagementController:
         )
  
     # -----------------------------------------------------------------------
+    # List all accounts
+    # -----------------------------------------------------------------------
+
+    async def list_accounts(self) -> ListAccountsResponse:
+        rows = await self._account_db.retrieve_all()
+        return ListAccountsResponse(
+            success=True,
+            accounts=[_row_to_response(r) for r in rows],
+        )
+
+    # -----------------------------------------------------------------------
     # UML: viewAccount()
     # -----------------------------------------------------------------------
  
-    async def view_account(self, username: str) -> ViewAccountResponse:
-        row = await self._account_view.view_account(username)
+    async def view_account(self, accountinfo_id: uuid.UUID) -> ViewAccountResponse:
+        row = await self._account_db.retrieve_by_id(accountinfo_id)
         if row is None:
-            raise ValueError(f"Account '{username}' not found.")
- 
+            raise ValueError(f"Account '{accountinfo_id}' not found.")
+
         account_response = _row_to_response(row)
         self._abstraction.set_current_account(account_response)
-        page = self._abstraction.build_info_page("account_page", f"Viewing account '{username}'.")
+        page = self._abstraction.build_info_page("account_page", f"Viewing account '{accountinfo_id}'.")
         return ViewAccountResponse(account_info=account_response, page=page)
  
     # -----------------------------------------------------------------------
@@ -494,12 +537,12 @@ class AccountManagementController:
     # -----------------------------------------------------------------------
  
     async def edit_account(
-        self, username: str, request: EditAccountRequest
+        self, accountinfo_id: uuid.UUID, request: EditAccountRequest
     ) -> EditAccountResponse:
-        row = await self._account_db.retrieve_by_username(username)
+        row = await self._account_db.retrieve_by_id(accountinfo_id)
         if row is None:
-            page = self._abstraction.build_error_page("account_error", f"Account '{username}' not found.")
-            return EditAccountResponse(success=False, message=f"Account '{username}' not found.", page=page)
+            page = self._abstraction.build_error_page("account_error", f"Account '{accountinfo_id}' not found.")
+            return EditAccountResponse(success=False, message=f"Account '{accountinfo_id}' not found.", page=page)
  
         success = await self._account_edit.edit_account(
             accountinfo_id=row.accountinfo_id,

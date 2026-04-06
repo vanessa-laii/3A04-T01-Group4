@@ -2,9 +2,10 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:8005'
+
 interface Profile {
   accountinfo_id: string
-  user_id: string
   username: string
   email: string
   phone_number: string | null
@@ -105,12 +106,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
 
       if (data.success) {
-        // Map your backend response to your React state
-        setUser({ id: data.accountinfo_id, email: email , app_metadata: {}, user_metadata: {}, aud: "authenticated", created_at: ""});
+        setUser({ id: data.accountinfo_id, email: data.email, app_metadata: {}, user_metadata: {}, aud: "authenticated", created_at: "" });
         setProfile({
-          role: data.role,
-          message: data.message,
-          ...data.page
+          accountinfo_id: data.accountinfo_id,
+          username:       data.username,
+          email:          data.email,
+          role:           data.role,
+          phone_number:   null,
+          is_active:      true,
         });
         return { error: null };
       } else {
@@ -130,8 +133,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function refreshProfile() {
     if (!user) return
-    const prof = await fetchProfile(user.id)
-    setProfile(prof)
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/v1/accounts/${user.id}`)
+      if (!res.ok) return
+      const data = await res.json()
+      const acc = data.account_info
+      setProfile({
+        accountinfo_id: acc.accountinfo_id,
+        username:       acc.username,
+        email:          acc.email,
+        role:           acc.role,
+        phone_number:   acc.phone_number ?? null,
+        is_active:      acc.is_active,
+      })
+    } catch { /* ignore */ }
   }
 
   return (

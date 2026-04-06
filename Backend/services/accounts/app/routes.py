@@ -24,6 +24,7 @@ from app.models import (
     CreateAccountResponse,
     EditAccountRequest,
     EditAccountResponse,
+    ListAccountsResponse,
     LoginRequest,
     LoginResponse,
     ViewAccountResponse,
@@ -58,6 +59,25 @@ async def login(
     ),
 ) -> LoginResponse:
     return await controller.login(request)
+
+
+# ---------------------------------------------------------------------------
+# List all accounts
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/accounts",
+    response_model=ListAccountsResponse,
+    status_code=status.HTTP_200_OK,
+    tags=["Accounts"],
+    summary="List all accounts",
+)
+async def list_accounts(
+    controller: AccountManagementController = Depends(
+        get_account_management_controller
+    ),
+) -> ListAccountsResponse:
+    return await controller.list_accounts()
 
 
 # ---------------------------------------------------------------------------
@@ -104,7 +124,7 @@ async def create_account(
     ),
 )
 async def view_account(
-    user_id: str,
+    user_id: uuid.UUID,
     controller: AccountManagementController = Depends(
         get_account_management_controller
     ),
@@ -137,7 +157,7 @@ async def view_account(
     ),
 )
 async def edit_account(
-    user_id: str,
+    user_id: uuid.UUID,
     request: EditAccountRequest,
     controller: AccountManagementController = Depends(
         get_account_management_controller

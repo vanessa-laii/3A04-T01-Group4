@@ -174,15 +174,27 @@ class ViewAccountResponse(BaseModel):
  
 class EditAccountRequest(BaseModel):
     """All fields optional — only supplied fields are updated."""
+    username:     Optional[str]      = None
     password:     Optional[str]      = Field(None, min_length=8)
     email:        Optional[EmailStr] = None
     phone_number: Optional[str]      = None
+    role:         Optional[UserRole] = None
+    is_active:    Optional[bool]     = None
  
  
 class EditAccountResponse(BaseModel):
     success: bool
     message: str = ""
     page:    Optional["PageDisplaySchema"] = None
+
+
+# ---------------------------------------------------------------------------
+# List all accounts
+# ---------------------------------------------------------------------------
+
+class ListAccountsResponse(BaseModel):
+    success:  bool
+    accounts: List[AccountInfoResponse]
  
  
 # ---------------------------------------------------------------------------
@@ -201,9 +213,12 @@ class PageDisplaySchema(BaseModel):
  
 class AccountDatabaseUpdateRequest(BaseModel):
     accountinfo_id: uuid.UUID
+    username:       Optional[str]      = None
     password:       Optional[str]      = None
     email:          Optional[EmailStr] = None
     phone_number:   Optional[str]      = None
+    role:           Optional[str]      = None
+    is_active:      Optional[bool]     = None
  
  
 # ---------------------------------------------------------------------------

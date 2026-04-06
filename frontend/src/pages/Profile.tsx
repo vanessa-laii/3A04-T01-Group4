@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { supabase } from '../lib/supabase'
 import { backendFetch } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import Sidebar from '../components/layout/Sidebar'
@@ -28,7 +27,7 @@ export default function Profile() {
     if (!profile) return
     setInfoLoading(true)
 
-    const res  = await backendFetch(`/api/v1/accounts/${profile.user_id}`, {
+    const res  = await backendFetch(`/api/v1/accounts/${profile.accountinfo_id}`, {
       method: 'PATCH',
       body: JSON.stringify({ username, phone_number: phone || null }),
     })
@@ -60,23 +59,29 @@ export default function Profile() {
 
     setPwLoading(true)
 
-    // Re-authenticate to verify current password
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: profile?.email ?? '',
-      password: currentPw,
+    // Verify current password via login endpoint
+    const verifyRes = await backendFetch('/api/v1/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username: profile?.email ?? '', password: currentPw }),
     })
+    const verifyData = await verifyRes.json()
 
-    if (signInError) {
+    if (!verifyData.success) {
       setPwLoading(false)
       setPwError('Current password is incorrect.')
       return
     }
 
-    const { error } = await supabase.auth.updateUser({ password: newPw })
+    // Update password via PATCH
+    const res = await backendFetch(`/api/v1/accounts/${profile?.accountinfo_id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ password: newPw }),
+    })
+    const data = await res.json()
     setPwLoading(false)
 
-    if (error) {
-      setPwError(error.message)
+    if (!res.ok || !data.success) {
+      setPwError(data?.message ?? 'Failed to update password.')
       return
     }
 
