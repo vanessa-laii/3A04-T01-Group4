@@ -11,6 +11,7 @@ Route groups:
 from __future__ import annotations
 
 from typing import Optional
+import uuid
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 
@@ -150,13 +151,20 @@ async def edit_account(
     summary="Get paginated audit log (AuditLogView.updatePage)",
 )
 async def get_audit_log(
-    user_id: Optional[str] = Query(None),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-    controller: AccountManagementController = Depends(get_account_management_controller),
-    _caller_id: str = Depends(get_current_user_id),
+    user_id: Optional[uuid.UUID] = Query(
+        None,
+        description="Filter audit events by userId.",
+        example="user-001",
+    ),
+    page: int = Query(1, ge=1, description="Page number."),
+    page_size: int = Query(20, ge=1, le=100, description="Results per page."),
+    controller: AccountManagementController = Depends(
+        get_account_management_controller
+    ),
 ) -> AuditLogPageResponse:
-    return controller.get_audit_log(user_id=user_id, page=page, page_size=page_size)
+    return await controller.get_audit_log(
+        user_id=user_id, page=page, page_size=page_size
+    )
 
 
 @router.get(
@@ -167,9 +175,9 @@ async def get_audit_log(
     summary="Display recent audit messages (AuditLogView.displayMessage)",
 )
 async def display_audit_messages(
-    user_id: Optional[str] = Query(None),
+    user_id: Optional[uuid.UUID] = Query(None, example="user-001"),
     limit: int = Query(20, ge=1, le=50),
     controller: AccountManagementController = Depends(get_account_management_controller),
     _caller_id: str = Depends(get_current_user_id),
 ) -> list[AuditLogEntryResponse]:
-    return controller.get_audit_event_display(user_id=user_id, limit=limit)
+    return await controller.get_audit_event_display(user_id=user_id, limit=limit)

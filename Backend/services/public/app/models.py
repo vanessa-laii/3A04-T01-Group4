@@ -79,7 +79,7 @@ class PublicAPISnapshot(BaseModel):
     Full snapshot exposed by a PublicAPI observer instance.
     This is what external consumers (citizens, third-party apps) receive.
     """
-    sensor_data: SensorDataSchema
+    sensor_data: Optional[SensorDataSchema] = None
     public_alerts: List["PublicAlertSchema"] = []
 
 

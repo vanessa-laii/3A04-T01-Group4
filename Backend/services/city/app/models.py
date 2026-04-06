@@ -7,7 +7,7 @@ objects used across routes, the controller, and inter-service calls.
 from __future__ import annotations
 
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Annotated
 
 from pydantic import BaseModel, Field
 
@@ -45,13 +45,13 @@ class AlertStatus(int, Enum):
 class SensorMetricSchema(BaseModel):
     metric_type: SensorMetricType
     value: float
-    unit: str = Field(..., example="celsius")
+    unit: Annotated[str, Field(example="celsius")]
 
 
 class SensorDataSchema(BaseModel):
-    timestamp: str = Field(..., example="2025-06-01T12:00:00Z")
-    region: str = Field(..., example="Downtown")
-    gps_location: str = Field(..., example="43.6532,-79.3832")
+    timestamp: Annotated[str, Field(example="2025-06-01T12:00:00Z")]
+    region: Annotated[str, Field(example="Downtown")]
+    gps_location: Annotated[str, Field(example="43.6532,-79.3832")]
     metrics: List[SensorMetricSchema]
 
 
@@ -70,15 +70,14 @@ class CityAbstractionSchema(BaseModel):
 
 class DashboardLayoutSchema(BaseModel):
     """Payload for editing the city dashboard layout."""
-    layout_config: dict = Field(
-        ...,
+    layout_config: Annotated[dict, Field(
         example={"widgets": ["air_quality_map", "alert_feed"]},
-    )
+    )]
 
 
 class DashboardSchema(BaseModel):
     """Snapshot of the current city dashboard state."""
-    sensor_data: SensorDataSchema
+    sensor_data: Optional[SensorDataSchema] = None
     layout_config: Optional[dict] = None
 
 
@@ -88,12 +87,11 @@ class DashboardSchema(BaseModel):
 
 class ObserverRegisterRequest(BaseModel):
     """Register a new CityObserver (e.g. a dashboard instance or service)."""
-    observer_id: str = Field(..., example="dashboard-01")
-    callback_url: Optional[str] = Field(
-        None,
+    observer_id: Annotated[str, Field(example="dashboard-01")]
+    callback_url: Annotated[Optional[str], Field(
         description="Webhook URL to POST updates to for remote observers.",
         example="http://webapp:3000/api/city-update",
-    )
+    )]
 
 
 class ObserverListResponse(BaseModel):
@@ -112,7 +110,7 @@ class LocationResponse(BaseModel):
 
 class LocationRequest(BaseModel):
     """Optional filter — request location data for a specific region."""
-    region: Optional[str] = Field(None, example="Downtown")
+    region: Annotated[Optional[str], Field(example="Downtown")]
 
 
 # ---------------------------------------------------------------------------

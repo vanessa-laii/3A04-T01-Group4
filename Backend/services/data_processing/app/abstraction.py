@@ -1,17 +1,6 @@
 """
 Data Processing Agent Service — DataAbstraction
 PAC Architecture: Abstraction layer of the Data Processing Agent.
-
-DataAbstraction sits between the DataProcessingController (control) and
-the presentation layer (pipeline status / query endpoints).  It holds:
-  - The most recently processed SensorData snapshot.
-  - A short in-memory ring buffer of recent pipeline results, useful for
-    status polling without hitting the database.
-  - The current processing status of the pipeline.
-
-The SensorDatabase itself is the durable store; this abstraction layer
-is intentionally lightweight and in-memory, acting as a fast-access
-cache and status tracker for the control layer.
 """
 
 from __future__ import annotations
@@ -19,11 +8,13 @@ from __future__ import annotations
 from collections import deque
 from typing import Deque, List, Optional
 
+# FIXED: Removed SensorDatabaseRecord (missing in models.py) 
+# and added TimeSeriesReadingSchema if needed for granular tracking.
 from app.models import (
     PipelineResult,
     ProcessingStatus,
     SensorDataSchema,
-    SensorDatabaseRecord,
+    TimeSeriesReadingSchema, 
 )
 
 
@@ -44,7 +35,8 @@ class DataAbstraction:
 
     def __init__(self):
         self._latest_sensor_data: Optional[SensorDataSchema] = None
-        self._latest_record: Optional[SensorDatabaseRecord] = None
+        # FIXED: Changed type from SensorDatabaseRecord to TimeSeriesReadingSchema
+        self._latest_readings: List[TimeSeriesReadingSchema] = []
         self._pipeline_status: ProcessingStatus = ProcessingStatus.RECEIVED
         self._result_buffer: Deque[PipelineResult] = deque(
             maxlen=_RESULT_BUFFER_SIZE
@@ -57,18 +49,17 @@ class DataAbstraction:
     def set_latest_sensor_data(
         self,
         sensor_data: SensorDataSchema,
-        record: Optional[SensorDatabaseRecord] = None,
     ) -> None:
         """Update the cached sensor data after a successful processJSONData."""
         self._latest_sensor_data = sensor_data
-        if record:
-            self._latest_record = record
+        # Automatically update the associated readings from the schema
+        self._latest_readings = sensor_data.readings
 
     def get_latest_sensor_data(self) -> Optional[SensorDataSchema]:
         return self._latest_sensor_data
 
-    def get_latest_record(self) -> Optional[SensorDatabaseRecord]:
-        return self._latest_record
+    def get_latest_readings(self) -> List[TimeSeriesReadingSchema]:
+        return self._latest_readings
 
     def has_data(self) -> bool:
         return self._latest_sensor_data is not None

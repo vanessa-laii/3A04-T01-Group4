@@ -20,6 +20,10 @@ from __future__ import annotations
 import logging
 from typing import Dict, List, Optional
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
+
 import httpx
 
 from app.abstraction import PublicAbstraction

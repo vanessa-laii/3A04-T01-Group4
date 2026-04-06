@@ -41,5 +41,8 @@ urllib3==2.6.3
 uvicorn==0.42.0
 uvloop==0.22.1
 watchfiles==1.1.1
-websockets>=11,<15
-supabase==2.15.0
+websockets==16.0
+# Async PostgreSQL driver
+asyncpg>=0.29
+# SQLAlchemy async ORM (works on top of asyncpg)
+sqlalchemy[asyncio]>=2.0

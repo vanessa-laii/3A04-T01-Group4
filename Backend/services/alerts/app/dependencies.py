@@ -9,8 +9,12 @@ lru_cache and injected into route handlers via Depends().
 from __future__ import annotations
 
 import os
-from functools import lru_cache
 
+import httpx
+from fastapi import Depends, Request
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_db
 from app.controller import CityAlertManagement
 
 
@@ -18,14 +22,21 @@ def _get_env(key: str, default: str) -> str:
     return os.getenv(key, default)
 
 
-@lru_cache(maxsize=1)
-def get_alert_management_controller() -> CityAlertManagement:
+async def get_alert_management_controller(
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+) -> CityAlertManagement:
     """
-    Construct and return the singleton CityAlertManagement controller.
+    Per-request factory for CityAlertManagement.
 
-    Expected environment variables (set in .env / docker-compose.yml):
-        CITY_SERVICE_URL    e.g. http://city:8000
+    Retrieves the shared httpx.AsyncClient from app.state (opened once
+    in main.py lifespan) so the HTTP connection pool is reused across
+    requests rather than recreated per request.
     """
+    http_client: httpx.AsyncClient = request.app.state.http_client
+
     return CityAlertManagement(
+        session=session,
         city_service_url=_get_env("CITY_SERVICE_URL", "http://localhost:8001"),
+        http_client=http_client,
     )

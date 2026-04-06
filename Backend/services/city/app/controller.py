@@ -16,6 +16,10 @@ from __future__ import annotations
 import logging
 from typing import List, Optional
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
+
 import httpx
 
 from app.models import (

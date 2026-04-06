@@ -15,12 +15,11 @@ CityAlertManagement is the concrete implementation used by this service.
 
 from contextlib import asynccontextmanager
 
+import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes import router
-from app.controller import CityAlertManagement
-from app.dependencies import get_alert_management_controller
 
 
 # ---------------------------------------------------------------------------
@@ -30,17 +29,18 @@ from app.dependencies import get_alert_management_controller
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Initialise the CityAlertManagement controller on startup and shut it
-    down gracefully on exit. The HTTP client used to notify the City agent
-    of triggered alerts is opened and closed here.
+    Opens the shared httpx.AsyncClient on startup and stores it on
+    app.state so dependencies.py can retrieve it via
+    request.app.state.http_client for every request that needs to
+    forward an alert to the City agent.
+
+    Closes the client gracefully on shutdown.
     """
-    controller: CityAlertManagement = get_alert_management_controller()
-    await controller.initialise()
-    app.state.controller = controller
+    app.state.http_client = httpx.AsyncClient(timeout=10.0)
 
     yield
 
-    await controller.shutdown()
+    await app.state.http_client.aclose()
 
 
 # ---------------------------------------------------------------------------
@@ -62,9 +62,6 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
 
-    # -----------------------------------------------------------------------
-    # CORS — internal service; restrict origins in production
-    # -----------------------------------------------------------------------
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -73,14 +70,8 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # -----------------------------------------------------------------------
-    # Routers
-    # -----------------------------------------------------------------------
     app.include_router(router, prefix="/api/v1")
 
-    # -----------------------------------------------------------------------
-    # Root health-check
-    # -----------------------------------------------------------------------
     @app.get("/", tags=["Health"])
     async def root():
         return {"service": "alerts-agent", "status": "running"}

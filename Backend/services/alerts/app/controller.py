@@ -12,622 +12,587 @@ Also contains:
 """
 
 from __future__ import annotations
-
+ 
 import logging
 import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
-
+ 
 import httpx
-
+from sqlalchemy import select, and_
+from sqlalchemy.ext.asyncio import AsyncSession
+ 
 from app.abstraction import AlertsAbstraction
+from app.orm_models import ConfiguredAlerts, TriggeredAlerts
 from app.models import (
+    AcknowledgeAlertRequest,
     AcknowledgeAlertResponse,
     AlertDatabaseQueryParams,
     AlertDatabaseQueryResponse,
     AlertPresentationSchema,
-    AlertSeverity,
-    AlertStatus,
+    AlertVisibility,
     ApproveAlertRuleResponse,
+    ConfiguredAlertSchema,
     ConfiguredAlertsDatabaseRecord,
+    ConfiguredAlertStatus,
     CreateAlertRuleRequest,
     CreateAlertRuleResponse,
     DeleteAlertRuleResponse,
     EditAlertRuleRequest,
     EditAlertRuleResponse,
-    EnvironmentalType,
+    EnvironmentalMetric,
     RejectAlertRuleResponse,
     SendForApprovalResponse,
-    TriggeredAlertsResponse,
-    TriggeredAlertsSchema,
+    TriggeredAlertSchema,
+    TriggeredAlertSeverity,
+    TriggeredAlertStatus,
 )
-
+ 
 logger = logging.getLogger(__name__)
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
 # ConfiguredAlertsDatabase
-# UML: + TriggeredAlerts: TriggeredAlerts
-#      (persistence class owned by AlertManagement)
+# Wraps configured_alerts table — rule definitions
 # ---------------------------------------------------------------------------
-
+ 
 class ConfiguredAlertsDatabase:
-    """
-    Persistence layer for TriggeredAlerts / configured alert rules.
-    All methods are async to support drop-in replacement with a real
-    async DB driver (SQLAlchemy async, asyncpg, etc.).
-
-    TODO: replace the in-memory dict with real DB calls.
-    """
-
-    def __init__(self):
-        # record_id -> ConfiguredAlertsDatabaseRecord
-        self._records: Dict[str, ConfiguredAlertsDatabaseRecord] = {}
-        # alertID -> record_id (secondary index for fast alert lookups)
-        self._alert_index: Dict[str, str] = {}
-
-    async def save(self, alert: TriggeredAlertsSchema) -> ConfiguredAlertsDatabaseRecord:
-        """Insert or update a TriggeredAlerts record."""
-        # If this alertID already has a record, update it in place
-        existing_record_id = self._alert_index.get(alert.alertID)
-        record_id = existing_record_id or f"db-rec-{uuid.uuid4().hex[:8]}"
-
-        record = ConfiguredAlertsDatabaseRecord(
-            record_id=record_id,
-            stored_at=datetime.now(timezone.utc).isoformat(),
-            alert=alert,
+    def __init__(self, session: AsyncSession):
+        self._session = session
+ 
+    async def save(self, alert: ConfiguredAlerts) -> ConfiguredAlerts:
+        self._session.add(alert)
+        await self._session.flush()
+        await self._session.commit()
+        await self._session.refresh(alert)
+        return alert
+ 
+    async def get_by_id(self, alert_id: uuid.UUID) -> Optional[ConfiguredAlerts]:
+        result = await self._session.execute(
+            select(ConfiguredAlerts).where(ConfiguredAlerts.alert_id == alert_id)
         )
-        self._records[record_id] = record
-        self._alert_index[alert.alertID] = record_id
-
-        logger.info(
-            "ConfiguredAlertsDatabase: saved alert '%s' (record_id=%s status=%s).",
-            alert.alertID,
-            record_id,
-            alert.status.name,
+        return result.scalar_one_or_none()
+ 
+    async def get_pending(self) -> List[ConfiguredAlerts]:
+        result = await self._session.execute(
+            select(ConfiguredAlerts).where(
+                ConfiguredAlerts.status == ConfiguredAlertStatus.PENDING.value
+            )
         )
-        return record
-
-    async def get_by_alert_id(
-        self, alert_id: str
-    ) -> Optional[ConfiguredAlertsDatabaseRecord]:
-        record_id = self._alert_index.get(alert_id)
-        if record_id is None:
-            return None
-        return self._records.get(record_id)
-
-    async def delete(self, alert_id: str) -> bool:
-        record_id = self._alert_index.pop(alert_id, None)
-        if record_id is None:
-            return False
-        self._records.pop(record_id, None)
-        logger.info("ConfiguredAlertsDatabase: deleted alert '%s'.", alert_id)
-        return True
-
+        return list(result.scalars().all())
+ 
+    async def get_approved_active(self) -> List[ConfiguredAlerts]:
+        result = await self._session.execute(
+            select(ConfiguredAlerts).where(
+                and_(
+                    ConfiguredAlerts.status == ConfiguredAlertStatus.APPROVED.value,
+                    ConfiguredAlerts.is_active == True,
+                )
+            )
+        )
+        return list(result.scalars().all())
+ 
     async def query(
         self, params: AlertDatabaseQueryParams
-    ) -> AlertDatabaseQueryResponse:
-        """Filter records by the supplied query parameters."""
-        results = [r.alert for r in self._records.values()]
-
-        if params.region:
-            results = [a for a in results if a.region == params.region]
-        if params.environmental_type:
-            results = [
-                a for a in results
-                if a.environmentalType == params.environmental_type
-            ]
-        if params.status is not None:
-            results = [a for a in results if a.status == params.status]
-        if params.severity is not None:
-            results = [a for a in results if a.severity == params.severity]
-        if params.publicly_visible is not None:
-            results = [
-                a for a in results
-                if a.publiclyVisible == params.publicly_visible
-            ]
-
-        results = results[: params.limit]
-
-        # Re-wrap in full records for the response
-        records = []
-        for alert in results:
-            rec = await self.get_by_alert_id(alert.alertID)
-            if rec:
-                records.append(rec)
-
-        return AlertDatabaseQueryResponse(records=records, total=len(records))
-
-
+    ) -> List[ConfiguredAlerts]:
+        conditions = []
+        if params.geographic_area:
+            conditions.append(ConfiguredAlerts.geographic_area == params.geographic_area)
+        if params.environmental_metric:
+            conditions.append(ConfiguredAlerts.environmental_metric == params.environmental_metric.value)
+        if params.configured_status:
+            conditions.append(ConfiguredAlerts.status == params.configured_status.value)
+ 
+        q = select(ConfiguredAlerts).limit(params.limit)
+        if conditions:
+            q = q.where(and_(*conditions))
+        result = await self._session.execute(q)
+        return list(result.scalars().all())
+ 
+ 
 # ---------------------------------------------------------------------------
-# AlertManagement — <<Abstract Class>> from UML
+# TriggeredAlertsDatabase
+# Wraps triggered_alerts table — fired alert events
 # ---------------------------------------------------------------------------
-
+ 
+class TriggeredAlertsDatabase:
+    def __init__(self, session: AsyncSession):
+        self._session = session
+ 
+    async def create(
+        self,
+        alert_id: uuid.UUID,
+        triggered_value: float,
+        sensor_id: Optional[str],
+        region: Optional[str],
+        severity: Optional[str],
+        is_public: bool,
+    ) -> TriggeredAlerts:
+        row = TriggeredAlerts(
+            alert_id=alert_id,
+            triggered_value=triggered_value,
+            sensor_id=sensor_id,
+            region=region,
+            alert_severity=severity,
+            is_public=is_public,
+            status=TriggeredAlertStatus.ACTIVE.value,
+        )
+        self._session.add(row)
+        await self._session.flush()
+        await self._session.commit()
+        await self._session.refresh(row)
+        return row
+ 
+    async def get_by_id(
+        self, triggered_alert_id: uuid.UUID
+    ) -> Optional[TriggeredAlerts]:
+        result = await self._session.execute(
+            select(TriggeredAlerts).where(
+                TriggeredAlerts.triggered_alert_id == triggered_alert_id
+            )
+        )
+        return result.scalar_one_or_none()
+ 
+    async def get_by_configured_alert(
+        self, alert_id: uuid.UUID
+    ) -> List[TriggeredAlerts]:
+        result = await self._session.execute(
+            select(TriggeredAlerts).where(TriggeredAlerts.alert_id == alert_id)
+        )
+        return list(result.scalars().all())
+ 
+    async def acknowledge(
+        self,
+        triggered_alert_id: uuid.UUID,
+        operator_id: uuid.UUID,
+    ) -> Optional[TriggeredAlerts]:
+        row = await self.get_by_id(triggered_alert_id)
+        if row is None or row.status != TriggeredAlertStatus.ACTIVE.value:
+            return None
+        row.status           = TriggeredAlertStatus.ACKNOWLEDGED.value
+        row.acknowledged_by  = operator_id
+        row.acknowledged_at  = datetime.now(timezone.utc)
+        await self._session.commit()
+        return row
+ 
+    async def query(
+        self, params: AlertDatabaseQueryParams
+    ) -> List[TriggeredAlerts]:
+        conditions = []
+        if params.triggered_status:
+            conditions.append(TriggeredAlerts.status == params.triggered_status.value)
+        if params.severity:
+            conditions.append(TriggeredAlerts.alert_severity == params.severity.value)
+        if params.is_public is not None:
+            conditions.append(TriggeredAlerts.is_public == params.is_public)
+ 
+        q = select(TriggeredAlerts).limit(params.limit)
+        if conditions:
+            q = q.where(and_(*conditions))
+        result = await self._session.execute(q)
+        return list(result.scalars().all())
+ 
+ 
+# ---------------------------------------------------------------------------
+# AlertManagement — abstract base (UML <<Abstract Class>>)
+# ---------------------------------------------------------------------------
+ 
 class AlertManagement(ABC):
-    """
-    UML <<Abstract Class>> AlertManagement.
-
-    Defines the six alert lifecycle operations that any concrete
-    implementation must provide. CityAlertManagement is the concrete
-    subclass used by this microservice.
-
-    UML attributes (owned by the concrete class):
-      - alertRules: List<TriggeredAlerts>       → AlertsAbstraction
-      - pendingApprovals: List<TriggeredAlerts>  → AlertsAbstraction
-      - alertPresentation: AlertPresentation     → AlertsAbstraction
-    """
-
     @abstractmethod
-    async def create_alert_rule(
-        self, request: CreateAlertRuleRequest
-    ) -> CreateAlertRuleResponse:
-        """UML: createAlertRule(alertID, environmentalType, Region,
-        threshold, time, visibility): boolean"""
+    async def create_alert_rule(self, request: CreateAlertRuleRequest) -> CreateAlertRuleResponse:
+        pass
+ 
+    @abstractmethod
+    async def send_for_approval(self, alert_id: uuid.UUID) -> SendForApprovalResponse:
+        pass
+ 
+    @abstractmethod
+    async def edit_alert_rule(self, alert_id: uuid.UUID, request: EditAlertRuleRequest) -> EditAlertRuleResponse:
+        pass
+ 
+    @abstractmethod
+    async def delete_alert_rule(self, alert_id: uuid.UUID) -> DeleteAlertRuleResponse:
+        pass
+ 
+    @abstractmethod
+    async def acknowledge_alert(self, triggered_alert_id: uuid.UUID, operator_id: uuid.UUID) -> AcknowledgeAlertResponse:
+        pass
+ 
+    @abstractmethod
+    async def approve_alert_rule(self, alert_id: uuid.UUID, approver_id: uuid.UUID) -> ApproveAlertRuleResponse:
         pass
 
     @abstractmethod
-    async def send_for_approval(self, alert_id: str) -> SendForApprovalResponse:
-        """UML: sendForApproval(alertID): void"""
-        pass
-
-    @abstractmethod
-    async def edit_alert_rule(
-        self, alert_id: str, request: EditAlertRuleRequest
-    ) -> EditAlertRuleResponse:
-        """UML: editAlertRule(alertID, updates): boolean"""
-        pass
-
-    @abstractmethod
-    async def delete_alert_rule(self, alert_id: str) -> DeleteAlertRuleResponse:
-        """UML: deleteAlertRule(alertID): boolean"""
-        pass
-
-    @abstractmethod
-    async def acknowledge_alert(
-        self, alert_id: str, operator_id: str
-    ) -> AcknowledgeAlertResponse:
-        """UML: acknowledgeAlert(alertID, operatorID): void"""
-        pass
-
-    @abstractmethod
-    async def approve_alert_rule(self, alert_id: str) -> ApproveAlertRuleResponse:
-        """UML: approveAlertRule(alertID): boolean"""
-        pass
-
-
-# ---------------------------------------------------------------------------
-# CityAlertManagement — concrete implementation of AlertManagement
-# ---------------------------------------------------------------------------
-
-class CityAlertManagement(AlertManagement):
-    """
-    Concrete control layer of the Alerts PAC Agent.
-
-    Extends AlertManagement (abstract) with full implementations of all
-    six UML lifecycle methods. Owns and wires together:
-      - ConfiguredAlertsDatabase  (persistence)
-      - AlertsAbstraction         (in-memory state + presentation layer)
-      - httpx.AsyncClient         (for forwarding to the City agent)
-    """
-
-    def __init__(self, city_service_url: str):
-        self._city_url = city_service_url
-        self._database = ConfiguredAlertsDatabase()
-        self._abstraction = AlertsAbstraction()
-        self._http_client: Optional[httpx.AsyncClient] = None
-
-    # -----------------------------------------------------------------------
-    # Lifecycle
-    # -----------------------------------------------------------------------
-
     async def initialise(self) -> None:
-        self._http_client = httpx.AsyncClient(timeout=10.0)
-        logger.info("CityAlertManagement initialised.")
+        pass
 
+    @abstractmethod
     async def shutdown(self) -> None:
-        if self._http_client:
-            await self._http_client.aclose()
-        logger.info("CityAlertManagement shut down.")
-
+        pass
+ 
+ 
+# ---------------------------------------------------------------------------
+# CityAlertManagement — concrete implementation
+# ---------------------------------------------------------------------------
+ 
+class CityAlertManagement(AlertManagement):
+ 
+    def __init__(
+        self,
+        session: AsyncSession,
+        city_service_url: str,
+        http_client: httpx.AsyncClient,
+    ):
+        self._configured_db  = ConfiguredAlertsDatabase(session)
+        self._triggered_db   = TriggeredAlertsDatabase(session)
+        self._abstraction    = AlertsAbstraction()
+        self._city_url       = city_service_url
+        self._http_client    = http_client
+ 
     # -----------------------------------------------------------------------
-    # UML: createAlertRule(alertID, environmentalType, Region,
-    #                      threshold, time, visibility): boolean
+    # createAlertRule → INSERT configured_alerts (status='pending')
     # -----------------------------------------------------------------------
-
+ 
     async def create_alert_rule(
         self, request: CreateAlertRuleRequest
     ) -> CreateAlertRuleResponse:
-        # Guard against duplicate alertIDs
-        existing = await self._database.get_by_alert_id(request.alertID)
-        if existing:
-            presentation = self._abstraction.presentation_for_error(
-                f"Alert rule '{request.alertID}' already exists."
-            )
-            return CreateAlertRuleResponse(
-                success=False,
-                message=f"Alert rule '{request.alertID}' already exists.",
-                presentation=presentation,
-            )
-
-        alert = TriggeredAlertsSchema(
-            alertID=request.alertID,
-            threshold=request.threshold,
-            environmentalType=request.environmentalType,
-            region=request.region,
-            severity=request.severity,
-            publiclyVisible=request.publiclyVisible,
-            time=request.time,
-            status=AlertStatus.PENDING_APPROVAL,
+        row = ConfiguredAlerts(
+            operator_id=request.operator_id,
+            environmental_metric=request.environmental_metric.value,
+            geographic_area=request.geographic_area,
+            threshold_value=request.threshold_value,
+            timeframe_minutes=request.timeframe_minutes,
+            alert_visibility=request.alert_visibility.value,
+            alert_name=request.alert_name,
+            threshold_value_max=request.threshold_value_max,
+            description=request.description,
+            status=ConfiguredAlertStatus.PENDING.value,
         )
-
-        await self._database.save(alert)
-        self._abstraction.add_alert_rule(alert)
-        presentation = self._abstraction.presentation_for_created(alert)
-
-        logger.info(
-            "Alert rule created: id=%s type=%s region=%s",
-            alert.alertID,
-            alert.environmentalType,
-            alert.region,
-        )
+        saved = await self._configured_db.save(row)
+        schema = _configured_to_schema(saved)
+        presentation = self._abstraction.presentation_for_created(schema)
+ 
+        logger.info("Alert rule created: id=%s name=%s", saved.alert_id, saved.alert_name)
         return CreateAlertRuleResponse(
             success=True,
-            alertID=alert.alertID,
-            status=alert.status,
-            message=f"Alert rule '{alert.alertID}' created. Awaiting approval.",
+            alert_id=saved.alert_id,
+            status=ConfiguredAlertStatus.PENDING,
+            message=f"Alert rule '{saved.alert_name}' created. Awaiting approval.",
             presentation=presentation,
         )
-
+ 
     # -----------------------------------------------------------------------
-    # UML: sendForApproval(alertID): void
+    # sendForApproval → no DB change; marks as submitted in abstraction layer
     # -----------------------------------------------------------------------
-
-    async def send_for_approval(self, alert_id: str) -> SendForApprovalResponse:
-        alert = self._abstraction.get_alert_rule(alert_id)
-
-        if alert is None:
-            presentation = self._abstraction.presentation_for_error(
-                f"Alert '{alert_id}' not found."
-            )
+ 
+    async def send_for_approval(
+        self, alert_id: uuid.UUID
+    ) -> SendForApprovalResponse:
+        row = await self._configured_db.get_by_id(alert_id)
+        if row is None:
             return SendForApprovalResponse(
-                success=False,
-                alertID=alert_id,
-                message=f"Alert '{alert_id}' not found.",
-                presentation=presentation,
+                success=False, alert_id=alert_id,
+                message=f"Alert rule '{alert_id}' not found.",
             )
-
-        if alert.status != AlertStatus.PENDING_APPROVAL:
-            presentation = self._abstraction.presentation_for_error(
-                f"Alert '{alert_id}' is not in PENDING_APPROVAL status "
-                f"(current: {alert.status.name})."
-            )
+        if row.status != ConfiguredAlertStatus.PENDING.value:
             return SendForApprovalResponse(
-                success=False,
-                alertID=alert_id,
-                message=f"Alert '{alert_id}' cannot be sent for approval "
-                        f"from status '{alert.status.name}'.",
-                presentation=presentation,
+                success=False, alert_id=alert_id,
+                message=f"Alert is in status '{row.status}', not 'pending'.",
             )
-
-        # Move to the pending approvals list
-        self._abstraction.add_to_pending(alert)
+        schema = _configured_to_schema(row)
+        self._abstraction.add_to_pending(schema)
         presentation = self._abstraction.set_presentation(
-            alert,
-            f"Alert '{alert_id}' submitted for approval.",
+            schema, None, f"Alert '{row.alert_name}' submitted for approval."
         )
-
-        logger.info("Alert '%s' sent for approval.", alert_id)
         return SendForApprovalResponse(
-            success=True,
-            alertID=alert_id,
-            message=f"Alert '{alert_id}' submitted for approval.",
+            success=True, alert_id=alert_id,
+            message=f"Alert '{row.alert_name}' submitted for approval.",
             presentation=presentation,
         )
-
+ 
     # -----------------------------------------------------------------------
-    # UML: editAlertRule(alertID, updates): boolean
+    # editAlertRule → UPDATE configured_alerts
     # -----------------------------------------------------------------------
-
+ 
     async def edit_alert_rule(
-        self, alert_id: str, request: EditAlertRuleRequest
+        self, alert_id: uuid.UUID, request: EditAlertRuleRequest
     ) -> EditAlertRuleResponse:
-        alert = self._abstraction.get_alert_rule(alert_id)
-
-        if alert is None:
-            presentation = self._abstraction.presentation_for_error(
-                f"Alert '{alert_id}' not found."
-            )
+        row = await self._configured_db.get_by_id(alert_id)
+        if row is None:
             return EditAlertRuleResponse(
-                success=False,
-                alertID=alert_id,
-                message=f"Alert '{alert_id}' not found.",
-                presentation=presentation,
+                success=False, alert_id=alert_id,
+                message=f"Alert rule '{alert_id}' not found.",
             )
-
-        # Resolved / rejected alerts cannot be edited
-        if alert.status in (AlertStatus.RESOLVED, AlertStatus.REJECTED):
-            presentation = self._abstraction.presentation_for_error(
-                f"Alert '{alert_id}' cannot be edited in status "
-                f"'{alert.status.name}'."
-            )
+        if row.status == ConfiguredAlertStatus.REJECTED.value:
             return EditAlertRuleResponse(
-                success=False,
-                alertID=alert_id,
-                message=f"Cannot edit alert with status '{alert.status.name}'.",
-                presentation=presentation,
+                success=False, alert_id=alert_id,
+                message="Cannot edit a rejected alert rule.",
             )
-
-        # Apply partial updates — only supplied fields are changed
-        updated_data = alert.model_dump()
-        if request.threshold is not None:
-            updated_data["threshold"] = request.threshold
-        if request.severity is not None:
-            updated_data["severity"] = request.severity
-        if request.region is not None:
-            updated_data["region"] = request.region
-        if request.time is not None:
-            updated_data["time"] = request.time
-        if request.publiclyVisible is not None:
-            updated_data["publiclyVisible"] = request.publiclyVisible
-
-        updated_alert = TriggeredAlertsSchema(**updated_data)
-        await self._database.save(updated_alert)
-        self._abstraction.update_alert_rule(updated_alert)
-
+ 
+        if request.threshold_value     is not None: row.threshold_value     = request.threshold_value
+        if request.threshold_value_max is not None: row.threshold_value_max = request.threshold_value_max
+        if request.timeframe_minutes   is not None: row.timeframe_minutes   = request.timeframe_minutes
+        if request.geographic_area     is not None: row.geographic_area     = request.geographic_area
+        if request.alert_visibility    is not None: row.alert_visibility    = request.alert_visibility.value
+        if request.alert_name          is not None: row.alert_name          = request.alert_name
+        if request.description         is not None: row.description         = request.description
+        if request.is_active           is not None: row.is_active           = request.is_active
+ 
+        row.updated_at = datetime.now(timezone.utc)
+        saved = await self._configured_db.save(row)
+        schema = _configured_to_schema(saved)
+        self._abstraction.update_alert_rule(schema)
         presentation = self._abstraction.set_presentation(
-            updated_alert,
-            f"Alert rule '{alert_id}' updated.",
+            schema, None, f"Alert rule '{saved.alert_name}' updated."
         )
-
-        logger.info("Alert rule '%s' edited.", alert_id)
+        logger.info("Alert rule edited: id=%s", alert_id)
         return EditAlertRuleResponse(
-            success=True,
-            alertID=alert_id,
-            message=f"Alert rule '{alert_id}' updated successfully.",
+            success=True, alert_id=alert_id,
+            message=f"Alert rule '{saved.alert_name}' updated.",
             presentation=presentation,
         )
-
+ 
     # -----------------------------------------------------------------------
-    # UML: deleteAlertRule(alertID): boolean
+    # deleteAlertRule → soft delete (is_active=False)
     # -----------------------------------------------------------------------
-
-    async def delete_alert_rule(self, alert_id: str) -> DeleteAlertRuleResponse:
-        db_deleted = await self._database.delete(alert_id)
-        mem_deleted = self._abstraction.remove_alert_rule(alert_id)
-        self._abstraction.remove_from_pending(alert_id)
-
-        if not db_deleted and not mem_deleted:
+ 
+    async def delete_alert_rule(
+        self, alert_id: uuid.UUID
+    ) -> DeleteAlertRuleResponse:
+        row = await self._configured_db.get_by_id(alert_id)
+        if row is None:
             return DeleteAlertRuleResponse(
-                success=False,
-                alertID=alert_id,
-                message=f"Alert '{alert_id}' not found.",
+                success=False, alert_id=alert_id,
+                message=f"Alert rule '{alert_id}' not found.",
             )
-
-        logger.info("Alert rule '%s' deleted.", alert_id)
+        row.is_active  = False
+        row.updated_at = datetime.now(timezone.utc)
+        await self._configured_db.save(row)
+        self._abstraction.remove_alert_rule(str(alert_id))
+        self._abstraction.remove_from_pending(str(alert_id))
+        logger.info("Alert rule soft-deleted: id=%s", alert_id)
         return DeleteAlertRuleResponse(
-            success=True,
-            alertID=alert_id,
-            message=f"Alert rule '{alert_id}' deleted.",
+            success=True, alert_id=alert_id,
+            message=f"Alert rule '{alert_id}' deactivated.",
         )
-
+ 
     # -----------------------------------------------------------------------
-    # UML: acknowledgeAlert(alertID, operatorID): void
+    # acknowledgeAlert → UPDATE triggered_alerts
     # -----------------------------------------------------------------------
-
+ 
     async def acknowledge_alert(
-        self, alert_id: str, operator_id: str
+        self, triggered_alert_id: uuid.UUID, operator_id: uuid.UUID
     ) -> AcknowledgeAlertResponse:
-        alert = self._abstraction.get_alert_rule(alert_id)
-
-        if alert is None:
-            presentation = self._abstraction.presentation_for_error(
-                f"Alert '{alert_id}' not found."
-            )
+        row = await self._triggered_db.acknowledge(triggered_alert_id, operator_id)
+        if row is None:
             return AcknowledgeAlertResponse(
                 success=False,
-                alertID=alert_id,
-                operatorID=operator_id,
-                message=f"Alert '{alert_id}' not found.",
-                presentation=presentation,
+                triggered_alert_id=triggered_alert_id,
+                operator_id=operator_id,
+                message=f"Triggered alert '{triggered_alert_id}' not found or not active.",
             )
-
-        if alert.status != AlertStatus.ACTIVE:
-            presentation = self._abstraction.presentation_for_error(
-                f"Alert '{alert_id}' must be ACTIVE to acknowledge "
-                f"(current: {alert.status.name})."
-            )
-            return AcknowledgeAlertResponse(
-                success=False,
-                alertID=alert_id,
-                operatorID=operator_id,
-                message=f"Cannot acknowledge alert with status '{alert.status.name}'.",
-                presentation=presentation,
-            )
-
-        updated_data = alert.model_dump()
-        updated_data["status"] = AlertStatus.ACKNOWLEDGED
-        updated_alert = TriggeredAlertsSchema(**updated_data)
-
-        await self._database.save(updated_alert)
-        self._abstraction.update_alert_rule(updated_alert)
-        presentation = self._abstraction.presentation_for_acknowledged(
-            updated_alert, operator_id
+        schema = _triggered_to_schema(row)
+        configured = await self._configured_db.get_by_id(row.alert_id)
+        configured_schema = _configured_to_schema(configured) if configured else None
+        presentation = self._abstraction.set_presentation(
+            configured_schema, schema,
+            f"Alert acknowledged by operator '{operator_id}'.",
         )
-
-        logger.info(
-            "Alert '%s' acknowledged by operator '%s'.", alert_id, operator_id
-        )
+        logger.info("Alert acknowledged: triggered_id=%s operator=%s", triggered_alert_id, operator_id)
         return AcknowledgeAlertResponse(
             success=True,
-            alertID=alert_id,
-            operatorID=operator_id,
-            message=f"Alert '{alert_id}' acknowledged.",
+            triggered_alert_id=triggered_alert_id,
+            operator_id=operator_id,
+            message="Alert acknowledged.",
             presentation=presentation,
         )
-
+ 
     # -----------------------------------------------------------------------
-    # UML: approveAlertRule(alertID): boolean
+    # approveAlertRule → UPDATE configured_alerts SET status='approved'
     # -----------------------------------------------------------------------
-
-    async def approve_alert_rule(self, alert_id: str) -> ApproveAlertRuleResponse:
-        # Must be in pending approvals list
-        pending = self._abstraction.remove_from_pending(alert_id)
-        alert = pending or self._abstraction.get_alert_rule(alert_id)
-
-        if alert is None:
-            presentation = self._abstraction.presentation_for_error(
-                f"Alert '{alert_id}' not found in pending approvals."
-            )
+ 
+    async def approve_alert_rule(
+        self, alert_id: uuid.UUID, approver_id: uuid.UUID
+    ) -> ApproveAlertRuleResponse:
+        row = await self._configured_db.get_by_id(alert_id)
+        if row is None:
             return ApproveAlertRuleResponse(
-                success=False,
-                alertID=alert_id,
-                message=f"Alert '{alert_id}' not found.",
-                presentation=presentation,
+                success=False, alert_id=alert_id,
+                message=f"Alert rule '{alert_id}' not found.",
             )
-
-        # Activate the alert
-        updated_data = alert.model_dump()
-        updated_data["status"] = AlertStatus.ACTIVE
-        active_alert = TriggeredAlertsSchema(**updated_data)
-
-        await self._database.save(active_alert)
-        self._abstraction.update_alert_rule(active_alert)
-        presentation = self._abstraction.presentation_for_approved(active_alert)
-
-        logger.info(
-            "Alert '%s' approved and active. publicly_visible=%s",
-            alert_id,
-            active_alert.publiclyVisible,
-        )
-
-        # Forward to City agent if publicly visible
+ 
+        row.status        = ConfiguredAlertStatus.APPROVED.value
+        row.approved_by   = approver_id
+        row.approval_date = datetime.now(timezone.utc)
+        row.updated_at    = datetime.now(timezone.utc)
+        saved = await self._configured_db.save(row)
+        schema = _configured_to_schema(saved)
+        self._abstraction.update_alert_rule(schema)
+        self._abstraction.remove_from_pending(str(alert_id))
+        presentation = self._abstraction.presentation_for_approved(schema)
+ 
         forwarded = False
-        if active_alert.publiclyVisible:
-            forwarded = await self._forward_to_city(active_alert)
-
+        if saved.alert_visibility == AlertVisibility.PUBLIC_FACING.value:
+            forwarded = await self._forward_to_city(schema)
+ 
+        logger.info("Alert rule approved: id=%s forwarded=%s", alert_id, forwarded)
         return ApproveAlertRuleResponse(
-            success=True,
-            alertID=alert_id,
+            success=True, alert_id=alert_id,
             forwarded_to_city=forwarded,
-            message=(
-                f"Alert '{alert_id}' approved and active."
-                + (" Forwarded to City agent." if forwarded else "")
-            ),
+            message=f"Alert rule approved." + (" Forwarded to City agent." if forwarded else ""),
             presentation=presentation,
         )
-
+ 
     # -----------------------------------------------------------------------
-    # Reject (workflow complement to approve — not in UML but required)
+    # reject (complements approve)
     # -----------------------------------------------------------------------
-
-    async def reject_alert_rule(self, alert_id: str) -> RejectAlertRuleResponse:
-        pending = self._abstraction.remove_from_pending(alert_id)
-        alert = pending or self._abstraction.get_alert_rule(alert_id)
-
-        if alert is None:
+ 
+    async def reject_alert_rule(
+        self, alert_id: uuid.UUID
+    ) -> RejectAlertRuleResponse:
+        row = await self._configured_db.get_by_id(alert_id)
+        if row is None:
             return RejectAlertRuleResponse(
-                success=False,
-                alertID=alert_id,
-                message=f"Alert '{alert_id}' not found.",
+                success=False, alert_id=alert_id,
+                message=f"Alert rule '{alert_id}' not found.",
             )
-
-        updated_data = alert.model_dump()
-        updated_data["status"] = AlertStatus.REJECTED
-        rejected_alert = TriggeredAlertsSchema(**updated_data)
-
-        await self._database.save(rejected_alert)
-        self._abstraction.update_alert_rule(rejected_alert)
-
-        logger.info("Alert '%s' rejected.", alert_id)
+        row.status     = ConfiguredAlertStatus.REJECTED.value
+        row.updated_at = datetime.now(timezone.utc)
+        await self._configured_db.save(row)
+        self._abstraction.remove_from_pending(str(alert_id))
+        logger.info("Alert rule rejected: id=%s", alert_id)
         return RejectAlertRuleResponse(
-            success=True,
-            alertID=alert_id,
-            message=f"Alert '{alert_id}' rejected.",
+            success=True, alert_id=alert_id,
+            message=f"Alert rule '{alert_id}' rejected.",
         )
-
+ 
     # -----------------------------------------------------------------------
-    # Abstraction layer accessors (used by routes)
+    # Accessors used by routes
     # -----------------------------------------------------------------------
-
-    def get_alert_rule(
-        self, alert_id: str
-    ) -> Optional[TriggeredAlertsSchema]:
-        return self._abstraction.get_alert_rule(alert_id)
-
-    def get_all_alert_rules(self) -> List[TriggeredAlertsSchema]:
-        return self._abstraction.get_all_alert_rules()
-
-    def get_active_rules(self) -> List[TriggeredAlertsSchema]:
-        return self._abstraction.get_active_rules()
-
-    def get_pending_approvals(self) -> List[TriggeredAlertsSchema]:
-        return self._abstraction.get_pending_approvals()
-
-    def get_presentation(self) -> Optional[AlertPresentationSchema]:
-        return self._abstraction.get_presentation()
-
-    # -----------------------------------------------------------------------
-    # ConfiguredAlertsDatabase query passthrough (used by routes)
-    # -----------------------------------------------------------------------
-
+ 
+    async def get_configured_alert(self, alert_id: uuid.UUID) -> Optional[ConfiguredAlertSchema]:
+        row = await self._configured_db.get_by_id(alert_id)
+        return _configured_to_schema(row) if row else None
+ 
+    async def get_all_configured(self) -> List[ConfiguredAlertSchema]:
+        rows = await self._configured_db.query(AlertDatabaseQueryParams(limit=1000))
+        return [_configured_to_schema(r) for r in rows]
+ 
+    async def get_pending_approvals(self) -> List[ConfiguredAlertSchema]:
+        rows = await self._configured_db.get_pending()
+        return [_configured_to_schema(r) for r in rows]
+ 
+    async def get_active_rules(self) -> List[ConfiguredAlertSchema]:
+        rows = await self._configured_db.get_approved_active()
+        return [_configured_to_schema(r) for r in rows]
+ 
+    async def get_triggered_alert(self, triggered_alert_id: uuid.UUID) -> Optional[TriggeredAlertSchema]:
+        row = await self._triggered_db.get_by_id(triggered_alert_id)
+        return _triggered_to_schema(row) if row else None
+ 
     async def query_database(
         self, params: AlertDatabaseQueryParams
     ) -> AlertDatabaseQueryResponse:
-        return await self._database.query(params)
-
-    async def get_database_record(
-        self, alert_id: str
-    ) -> Optional[ConfiguredAlertsDatabaseRecord]:
-        return await self._database.get_by_alert_id(alert_id)
-
+        configured_rows = await self._configured_db.query(params)
+        records = []
+        for c in configured_rows:
+            triggered_rows = await self._triggered_db.get_by_configured_alert(c.alert_id)
+            records.append(ConfiguredAlertsDatabaseRecord(
+                alert=_configured_to_schema(c),
+                triggered=[_triggered_to_schema(t) for t in triggered_rows],
+            ))
+        return AlertDatabaseQueryResponse(records=records, total=len(records))
+ 
+    def get_presentation(self) -> Optional[AlertPresentationSchema]:
+        return self._abstraction.get_presentation()
+ 
     # -----------------------------------------------------------------------
     # City agent forwarding
     # -----------------------------------------------------------------------
-
-    async def _forward_to_city(self, alert: TriggeredAlertsSchema) -> bool:
-        """
-        POST the approved, publicly visible alert to the City agent.
-        The City agent will route it onward to the Public agent.
-        Returns True on success, False on failure.
-        """
-        if not self._http_client:
-            logger.error("HTTP client not initialised — cannot forward alert.")
-            return False
-
+ 
+    async def _forward_to_city(self, alert: ConfiguredAlertSchema) -> bool:
         payload = {
-            "alert_id": alert.alertID,
-            "severity": alert.severity.value,
-            "status": alert.status.value,
-            "region": alert.region,
-            "environmental_type": alert.environmentalType.value,
-            "threshold": alert.threshold,
-            "time": alert.time,
-            "publicly_visible": alert.publiclyVisible,
+            "alert_id":           str(alert.alert_id),
+            "severity":           "MEDIUM",
+            "status":             alert.status.value,
+            "region":             alert.geographic_area,
+            "environmental_type": alert.environmental_metric.value,
+            "threshold":          alert.threshold_value,
+            "time":               datetime.now(timezone.utc).isoformat(),
+            "publicly_visible":   alert.alert_visibility == AlertVisibility.PUBLIC_FACING,
         }
-
         try:
-            response = await self._http_client.post(
-                f"{self._city_url}/api/v1/alerts/inbound",
-                json=payload,
+            resp = await self._http_client.post(
+                f"{self._city_url}/api/v1/alerts/inbound", json=payload
             )
-            response.raise_for_status()
-            logger.info(
-                "Alert '%s' forwarded to City agent.", alert.alertID
-            )
+            resp.raise_for_status()
             return True
         except httpx.RequestError as exc:
-            logger.error(
-                "Failed to forward alert '%s' to City agent (network): %s",
-                alert.alertID,
-                exc,
-            )
+            logger.error("Failed to forward alert to City agent: %s", exc)
             return False
-        except httpx.HTTPStatusError as exc:
-            logger.error(
-                "Failed to forward alert '%s' to City agent (HTTP %s): %s",
-                alert.alertID,
-                exc.response.status_code,
-                exc,
-            )
-            return False
+
+    async def initialise(self) -> None:
+        """
+        Prepare the controller for operation. 
+        This is called during the FastAPI lifespan startup.
+        """
+        # If AccountDatabase or AuditLogDataClass need to 
+        # warm up a connection pool or check DB health, do it here.
+        # Example: await self._account_db.verify_connection()
+        pass
+
+    async def shutdown(self) -> None:
+        """
+        Gracefully shut down sub-components.
+        This is called during the FastAPI lifespan shutdown.
+        """
+        # Clear the in-memory abstraction cache on shutdown
+        self._abstraction.clear_session()
+        
+        # If you added an HTTP client or a specific worker to 
+        # any sub-component, close it here.
+        # Example: await self._audit_log.close_session()
+        pass
+ 
+ 
+# ---------------------------------------------------------------------------
+# Helpers — ORM row → Pydantic schema
+# ---------------------------------------------------------------------------
+ 
+def _configured_to_schema(row: ConfiguredAlerts) -> ConfiguredAlertSchema:
+    return ConfiguredAlertSchema(
+        alert_id=row.alert_id,
+        operator_id=row.operator_id,
+        environmental_metric=EnvironmentalMetric(row.environmental_metric),
+        geographic_area=row.geographic_area,
+        threshold_value=row.threshold_value,
+        timeframe_minutes=row.timeframe_minutes,
+        alert_visibility=AlertVisibility(row.alert_visibility),
+        alert_name=row.alert_name,
+        threshold_value_max=row.threshold_value_max,
+        description=row.description,
+        is_active=row.is_active or True,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+        approved_by=row.approved_by,
+        approval_date=row.approval_date,
+        status=ConfiguredAlertStatus(row.status or "pending"),
+    )
+ 
+ 
+def _triggered_to_schema(row: TriggeredAlerts) -> TriggeredAlertSchema:
+    return TriggeredAlertSchema(
+        triggered_alert_id=row.triggered_alert_id,
+        alert_id=row.alert_id,
+        triggered_value=row.triggered_value,
+        sensor_id=row.sensor_id,
+        region=row.region,
+        triggered_at=row.triggered_at,
+        acknowledged_at=row.acknowledged_at,
+        acknowledged_by=row.acknowledged_by,
+        is_false_alarm=row.is_false_alarm or False,
+        alert_severity=TriggeredAlertSeverity(row.alert_severity) if row.alert_severity else None,
+        is_public=row.is_public or False,
+        status=TriggeredAlertStatus(row.status or "active"),
+    )

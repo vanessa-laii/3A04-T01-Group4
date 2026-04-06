@@ -12,17 +12,18 @@ AccountDatabase and AuditLogData are now backed by Supabase.
 """
 
 from __future__ import annotations
-
+ 
+import hashlib
 import logging
-import os
-import time
-from functools import lru_cache
-from typing import List, Optional
-
-from dotenv import load_dotenv
-from supabase import Client, create_client
-
+import uuid
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+ 
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+ 
 from app.abstraction import AccountsAbstraction
+from app.orm_models import AccountInformation, AuditLogData
 from app.models import (
     AccountDatabaseUpdateRequest,
     AccountInfoResponse,
@@ -31,22 +32,21 @@ from app.models import (
     AuditInformationSchema,
     AuditLogEntryResponse,
     AuditLogPageResponse,
+    AuditStatus,
     CreateAccountRequest,
     CreateAccountResponse,
     EditAccountRequest,
     EditAccountResponse,
     LoginRequest,
     LoginResponse,
-    PageDisplaySchema,
     UserRole,
     ViewAccountResponse,
     SuccessResponse,
 )
-
-load_dotenv()
+ 
 logger = logging.getLogger(__name__)
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
 # Supabase client — singleton with service role key
 # ---------------------------------------------------------------------------
@@ -60,366 +60,557 @@ def _get_supabase() -> Client:
 
 # ---------------------------------------------------------------------------
 # AccountDatabase
-# Persistence layer backed by Supabase account_information table.
 # ---------------------------------------------------------------------------
-
+ 
 class AccountDatabase:
     """
-    UML: AccountDatabase
-      - accountInfo: AccountInfo
-      - userId: String
-      + retrieveAccountInfo(): AccountInfo
-      + updateAccountInfo(): boolean
+    Persistence layer backed by the account_information table.
+ 
+    Column mapping (DB → UML / schema):
+      accountinfo_id → primary key (UUID)
+      username       → userId equivalent
+      password_hash  → hashed password
+      phone_number   → phoneNum
+      role           → UserRole string
     """
-
-    def __init__(self):
-        self._sb = _get_supabase()
-
-    def retrieve_account_info(self, user_id: str) -> Optional[AccountInfoSchema]:
-        result = (
-            self._sb.table("account_information")
-            .select("*")
-            .eq("user_id", user_id)
-            .execute()
+ 
+    def __init__(self, session: AsyncSession):
+        self._session = session
+ 
+    async def retrieve_by_username(
+        self, username: str
+    ) -> Optional[AccountInformation]:
+        """SELECT * FROM account_information WHERE username = :username"""
+        result = await self._session.execute(
+            select(AccountInformation).where(
+                AccountInformation.username == username
+            )
         )
-        if not result.data:
+        return result.scalar_one_or_none()
+ 
+    async def retrieve_by_id(
+        self, accountinfo_id: uuid.UUID
+    ) -> Optional[AccountInformation]:
+        """SELECT * FROM account_information WHERE accountinfo_id = :id"""
+        result = await self._session.execute(
+            select(AccountInformation).where(
+                AccountInformation.accountinfo_id == accountinfo_id
+            )
+        )
+        return result.scalar_one_or_none()
+ 
+    async def retrieve_account_info(
+        self, username: str
+    ) -> Optional[AccountInfoSchema]:
+        """UML: retrieveAccountInfo() — returns schema object or None."""
+        row = await self.retrieve_by_username(username)
+        if row is None:
             return None
-        row = result.data[0]
-        return AccountInfoSchema(
-            accountinfo_id=row["accountinfo_id"],
-            user_id=row["user_id"],
-            username=row["username"],
-            email=row["email"],
-            phone_number=row.get("phone_number"),
-            role=UserRole(row["role"]),
-            is_active=row["is_active"],
-        )
-
-    def update_account_info(self, request: AccountDatabaseUpdateRequest) -> bool:
-        updates: dict = {}
-        if request.username     is not None: updates["username"]     = request.username
-        if request.phone_number is not None: updates["phone_number"] = request.phone_number or None
-        if request.role         is not None: updates["role"]         = request.role.value
-        if request.is_active    is not None: updates["is_active"]    = request.is_active
-        if not updates:
-            return True
-        updates["updated_at"] = _iso_now()
-        self._sb.table("account_information").update(updates).eq("user_id", request.userId).execute()
-        logger.info("AccountInfo updated for user_id='%s'.", request.userId)
+        return _row_to_schema(row)
+ 
+    async def update_account_info(
+        self, request: AccountDatabaseUpdateRequest
+    ) -> bool:
+        """
+        UML: updateAccountInfo() — partial update.
+        Snapshots old values for the audit log before applying changes.
+        Returns (success, old_values, new_values).
+        """
+        row = await self.retrieve_by_id(request.accountinfo_id)
+        if row is None:
+            return False
+ 
+        old_values: Dict[str, Any] = {}
+        new_values: Dict[str, Any] = {}
+ 
+        if request.password:
+            old_values["password_hash"] = "REDACTED"
+            row.password_hash = _hash_password(request.password)
+            new_values["password_hash"] = "REDACTED"
+        if request.email:
+            old_values["email"] = row.email
+            row.email = request.email
+            new_values["email"] = request.email
+        if request.phone_number:
+            old_values["phone_number"] = row.phone_number
+            row.phone_number = request.phone_number
+            new_values["phone_number"] = request.phone_number
+ 
+        row.updated_at = datetime.now(timezone.utc)
+        await self._session.commit()
+        logger.info("AccountInformation updated: accountinfo_id=%s", request.accountinfo_id)
         return True
-
-    def create_record(self, request: CreateAccountRequest) -> str:
-        """Create Supabase Auth user + account_information row. Returns new user UUID."""
-        auth_result = self._sb.auth.admin.create_user({
-            "email": request.email,
-            "password": request.password,
-            "email_confirm": True,
-        })
-        user_id = auth_result.user.id
-
-        self._sb.table("account_information").insert({
-            "user_id":       user_id,
-            "username":      request.username,
-            "email":         request.email,
-            "phone_number":  request.phone_number or None,
-            "role":          request.role.value,
-            "is_active":     True,
-            "password_hash": "managed_by_supabase_auth",
-        }).execute()
-
-        logger.info("Account created: user_id='%s' email='%s'.", user_id, request.email)
-        return user_id
-
-    def email_exists(self, email: str) -> bool:
-        result = (
-            self._sb.table("account_information")
-            .select("accountinfo_id")
-            .eq("email", email)
-            .execute()
+ 
+    async def create_record(
+        self, request: CreateAccountRequest
+    ) -> Optional[AccountInformation]:
+        """
+        INSERT INTO account_information (...) VALUES (...)
+        Returns the created ORM row (with DB-generated accountinfo_id),
+        or None if username/email already exists.
+        """
+        # Check uniqueness manually — DB constraint will also catch it,
+        # but this gives a cleaner error message
+        existing = await self.retrieve_by_username(request.username)
+        if existing:
+            return None
+ 
+        row = AccountInformation(
+            username=request.username,
+            password_hash=_hash_password(request.password),
+            email=request.email,
+            role=request.role.value,
+            phone_number=request.phone_number,
         )
-        return len(result.data) > 0
-
-    def verify_via_supabase(self, email: str, password: str):
+        self._session.add(row)
+        await self._session.flush()   # populates accountinfo_id from DB default
+        await self._session.commit()
+        await self._session.refresh(row)
+        logger.info("AccountInformation created: username=%s id=%s", row.username, row.accountinfo_id)
+        return row
+ 
+    async def verify_credentials(
+        self, username: str, password: str
+    ) -> Optional[AccountInformation]:
         """
-        Attempt Supabase Auth sign-in. Returns (access_token, user_id) on
-        success, raises an exception on failure.
+        Returns the ORM row if credentials are valid, None otherwise.
+        Also updates last_login on success.
         """
-        result = self._sb.auth.sign_in_with_password({"email": email, "password": password})
-        return result.session.access_token, result.user.id
-
-
+        row = await self.retrieve_by_username(username)
+        if row is None:
+            return None
+        if row.password_hash != _hash_password(password):
+            return None
+ 
+        row.last_login = datetime.now(timezone.utc)
+        await self._session.commit()
+        return row
+ 
+    async def user_exists(self, username: str) -> bool:
+        row = await self.retrieve_by_username(username)
+        return row is not None
+ 
+ 
 # ---------------------------------------------------------------------------
 # AuditLogData
-# In-memory for now — TODO: persist to Supabase audit_log table.
 # ---------------------------------------------------------------------------
-
-class AuditLogData:
+ 
+class AuditLogDataClass:
     """
-    UML: AuditLogData
-      - auditInfo: AuditInformation
-      + getAuditInformation(): AuditInformation
-      + updateAuditInformation(Info): void
+    Append-only audit log backed by the audit_log_data table.
+ 
+    The real schema is richer than the UML design:
+      - entity_type / entity_id track what was acted on
+      - old_values / new_values store JSONB snapshots
+      - status tracks success / failure / partial
+      - ip_address / user_agent for request context
+      - retention_until set automatically by DB (now + 1 year)
     """
-
-    def __init__(self):
-        self._log: List[AuditInformationSchema] = []
-
-    def get_audit_information(
-        self,
-        user_id: Optional[str] = None,
-        limit: int = 100,
-    ) -> List[AuditInformationSchema]:
-        events = self._log
-        if user_id:
-            events = [e for e in events if e.userId == user_id]
-        return events[-limit:]
-
-    def update_audit_information(self, info: AuditInformationSchema) -> None:
-        self._log.append(info)
-        logger.info("Audit: userId=%s type=%s", info.userId, info.EventType)
-
-
-# ---------------------------------------------------------------------------
-# Operation classes
-# ---------------------------------------------------------------------------
-
-class AccountLogin:
-    """UML: AccountLogin — login(email, password): boolean"""
-
-    def __init__(self, db: AccountDatabase, audit: AuditLogData):
-        self._db    = db
-        self._audit = audit
-
-    def login(self, email: str, password: str):
-        """Returns (success, access_token, user_id)."""
-        try:
-            access_token, user_id = self._db.verify_via_supabase(email, password)
-            self._audit.update_audit_information(AuditInformationSchema(
-                userId=user_id,
-                EventType=AuditEventType.LOGIN,
-                EventDesc="User logged in successfully.",
-                EventDate=_now(),
-            ))
-            return True, access_token, user_id
-        except Exception as exc:
-            logger.warning("Login failed for email='%s': %s", email, exc)
-            self._audit.update_audit_information(AuditInformationSchema(
-                userId=email,
-                EventType=AuditEventType.LOGIN_FAILED,
-                EventDesc="Login attempt failed — invalid credentials.",
-                EventDate=_now(),
-            ))
-            return False, None, None
-
-
-class CreateAccount:
-    """UML: CreateAccount — createAccount(...): boolean"""
-
-    def __init__(self, db: AccountDatabase, audit: AuditLogData):
-        self._db    = db
-        self._audit = audit
-
-    def create_account(self, request: CreateAccountRequest) -> Optional[str]:
-        """Returns new user_id on success, None on failure."""
-        if self._db.email_exists(request.email):
-            logger.warning("createAccount: email='%s' already exists.", request.email)
-            return None
-        try:
-            user_id = self._db.create_record(request)
-            self._audit.update_audit_information(AuditInformationSchema(
-                userId=user_id,
-                EventType=AuditEventType.CREATE_ACCOUNT,
-                EventDesc=f"Account created with role '{request.role.value}'.",
-                EventDate=_now(),
-            ))
-            return user_id
-        except Exception as exc:
-            logger.error("createAccount failed: %s", exc)
-            return None
-
-
-class ViewAccount:
-    """UML: ViewAccount — viewAccount(): void"""
-
-    def __init__(self, db: AccountDatabase, audit: AuditLogData):
-        self._db    = db
-        self._audit = audit
-
-    def view_account(self, user_id: str) -> Optional[AccountInfoSchema]:
-        info = self._db.retrieve_account_info(user_id)
-        if info:
-            self._audit.update_audit_information(AuditInformationSchema(
-                userId=user_id,
-                EventType=AuditEventType.VIEW_ACCOUNT,
-                EventDesc="Account details viewed.",
-                EventDate=_now(),
-            ))
-        return info
-
-
-class EditAccount:
-    """UML: EditAccount — editAccount(username, phone, role, is_active): boolean"""
-
-    def __init__(self, db: AccountDatabase, audit: AuditLogData):
-        self._db    = db
-        self._audit = audit
-
-    def edit_account(self, user_id: str, request: EditAccountRequest) -> bool:
-        update = AccountDatabaseUpdateRequest(
-            userId=user_id,
-            username=request.username,
-            phone_number=request.phone_number,
-            role=request.role,
-            is_active=request.is_active,
+ 
+    def __init__(self, session: AsyncSession):
+        self._session = session
+ 
+    async def update_audit_information(
+        self, info: AuditInformationSchema
+    ) -> None:
+        """
+        UML: updateAuditInformation(Info): void
+        Inserts a new audit_log_data row.
+        timestamp and retention_until are set by DB defaults.
+        """
+        row = AuditLogData(
+            event_type=info.event_type.value,
+            action_description=info.action_description,
+            user_id=info.user_id,
+            entity_type=info.entity_type,
+            entity_id=info.entity_id,
+            old_values=info.old_values,
+            new_values=info.new_values,
+            status=info.status.value,
+            ip_address=info.ip_address,
+            user_agent=info.user_agent,
         )
-        success = self._db.update_account_info(update)
+        self._session.add(row)
+        await self._session.flush()
+        logger.info(
+            "Audit event: type=%s user_id=%s status=%s",
+            info.event_type.value, info.user_id, info.status.value,
+        )
+ 
+    async def get_audit_information(
+        self,
+        user_id: Optional[uuid.UUID] = None,
+        limit: int = 100,
+    ) -> List[AuditLogData]:
+        """
+        UML: getAuditInformation(): AuditInformation
+        SELECT ... ORDER BY timestamp DESC LIMIT :limit
+        """
+        q = (
+            select(AuditLogData)
+            .order_by(AuditLogData.timestamp.desc())
+            .limit(limit)
+        )
+        if user_id:
+            q = q.where(AuditLogData.user_id == user_id)
+        result = await self._session.execute(q)
+        return list(result.scalars().all())
+ 
+ 
+# ---------------------------------------------------------------------------
+# Operation classes — thin delegation layer (unchanged structure)
+# ---------------------------------------------------------------------------
+ 
+class AccountLogin:
+    def __init__(self, db: AccountDatabase, audit: AuditLogDataClass):
+        self._db    = db
+        self._audit = audit
+ 
+    async def login(
+        self, username: str, password: str
+    ) -> Optional[AccountInformation]:
+        row = await self._db.verify_credentials(username, password)
+        success = row is not None
+ 
+        await self._audit.update_audit_information(
+            AuditInformationSchema(
+                event_type=AuditEventType.USER_LOGIN if success else AuditEventType.USER_LOGIN,
+                action_description=(
+                    "User logged in successfully."
+                    if success
+                    else "Login attempt failed — invalid credentials."
+                ),
+                user_id=row.accountinfo_id if row else None,
+                entity_type="account",
+                entity_id=username,
+                status=AuditStatus.SUCCESS if success else AuditStatus.FAILURE,
+            )
+        )
+        return row
+ 
+ 
+class CreateAccount:
+    def __init__(self, db: AccountDatabase, audit: AuditLogDataClass):
+        self._db    = db
+        self._audit = audit
+ 
+    async def create_account(
+        self, request: CreateAccountRequest
+    ) -> Optional[AccountInformation]:
+        row = await self._db.create_record(request)
+        if row:
+            await self._audit.update_audit_information(
+                AuditInformationSchema(
+                    event_type=AuditEventType.USER_CREATED,
+                    action_description=f"Account created with role '{request.role.value}'.",
+                    user_id=row.accountinfo_id,
+                    entity_type="account",
+                    entity_id=str(row.accountinfo_id),
+                    new_values={
+                        "username": row.username,
+                        "email": row.email,
+                        "role": row.role,
+                    },
+                    status=AuditStatus.SUCCESS,
+                )
+            )
+        return row
+ 
+ 
+class ViewAccount:
+    def __init__(self, db: AccountDatabase, audit: AuditLogDataClass):
+        self._db    = db
+        self._audit = audit
+ 
+    async def view_account(
+        self, username: str
+    ) -> Optional[AccountInformation]:
+        row = await self._db.retrieve_by_username(username)
+        if row:
+            await self._audit.update_audit_information(
+                AuditInformationSchema(
+                    event_type=AuditEventType.DATA_ACCESS,
+                    action_description="Account details viewed.",
+                    user_id=row.accountinfo_id,
+                    entity_type="account",
+                    entity_id=str(row.accountinfo_id),
+                    status=AuditStatus.SUCCESS,
+                )
+            )
+        return row
+ 
+ 
+class EditAccount:
+    def __init__(self, db: AccountDatabase, audit: AuditLogDataClass):
+        self._db    = db
+        self._audit = audit
+ 
+    async def edit_account(
+        self,
+        accountinfo_id: uuid.UUID,
+        request: EditAccountRequest,
+        actor_id: Optional[uuid.UUID] = None,
+    ) -> bool:
+        # Capture old values before update for audit log
+        row = await self._db.retrieve_by_id(accountinfo_id)
+        if row is None:
+            return False
+ 
+        old_snap: Dict[str, Any] = {}
+        new_snap: Dict[str, Any] = {}
+        if request.email:
+            old_snap["email"] = row.email
+            new_snap["email"] = request.email
+        if request.phone_number:
+            old_snap["phone_number"] = row.phone_number
+            new_snap["phone_number"] = request.phone_number
+        if request.password:
+            old_snap["password_hash"] = "REDACTED"
+            new_snap["password_hash"] = "REDACTED"
+ 
+        db_request = AccountDatabaseUpdateRequest(
+            accountinfo_id=accountinfo_id,
+            password=request.password,
+            email=request.email,
+            phone_number=request.phone_number,
+        )
+        success = await self._db.update_account_info(db_request)
+ 
         if success:
-            changed = [f for f in ("username", "phone_number", "role", "is_active")
-                       if getattr(request, f) is not None]
-            self._audit.update_audit_information(AuditInformationSchema(
-                userId=user_id,
-                EventType=AuditEventType.EDIT_ACCOUNT,
-                EventDesc=f"Account fields updated: {', '.join(changed)}.",
-                EventDate=_now(),
-            ))
+            await self._audit.update_audit_information(
+                AuditInformationSchema(
+                    event_type=AuditEventType.USER_MODIFIED,
+                    action_description=f"Account fields updated: {', '.join(new_snap.keys())}.",
+                    user_id=actor_id or accountinfo_id,
+                    entity_type="account",
+                    entity_id=str(accountinfo_id),
+                    old_values=old_snap,
+                    new_values=new_snap,
+                    status=AuditStatus.SUCCESS,
+                )
+            )
         return success
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
-# AccountManagementController — Control layer
+# AccountManagementController
 # ---------------------------------------------------------------------------
-
+ 
 class AccountManagementController:
-    def __init__(self):
-        self._account_db     = AccountDatabase()
-        self._audit_log      = AuditLogData()
+    """
+    Control layer of the Accounts PAC Agent.
+    Accepts an AsyncSession and wires all sub-components together.
+    """
+ 
+    def __init__(self, session: AsyncSession):
+        self._account_db    = AccountDatabase(session)
+        self._audit_log     = AuditLogDataClass(session)
         self._account_login  = AccountLogin(self._account_db, self._audit_log)
         self._account_create = CreateAccount(self._account_db, self._audit_log)
         self._account_view   = ViewAccount(self._account_db, self._audit_log)
         self._account_edit   = EditAccount(self._account_db, self._audit_log)
         self._abstraction    = AccountsAbstraction()
-
-    async def initialise(self) -> None:
-        logger.info("AccountManagementController initialised (Supabase backend).")
-
-    async def shutdown(self) -> None:
-        logger.info("AccountManagementController shut down.")
-
+ 
     # -----------------------------------------------------------------------
     # UML: login(email, password): boolean
     # -----------------------------------------------------------------------
-
+ 
     async def login(self, request: LoginRequest) -> LoginResponse:
-        success, access_token, user_id = self._account_login.login(request.email, request.password)
-
-        if success:
-            info = self._account_db.retrieve_account_info(user_id)
-            if info and not info.is_active:
-                page = self._abstraction.build_error_page("login_page", "Account is deactivated.")
-                return LoginResponse(success=False, message="Account is deactivated.", page=page)
-
-            role = info.role if info else UserRole.PUBLIC_USER
-            self._abstraction.set_active_session(user_id, role)
+        row = await self._account_login.login(request.username, request.password)
+ 
+        if row:
+            role = UserRole(row.role)
+            self._abstraction.set_active_session(row.accountinfo_id, role)
             page = self._abstraction.build_success_page("login_page", "Login successful.")
             return LoginResponse(
                 success=True,
-                user_id=user_id,
-                access_token=access_token,
+                accountinfo_id=row.accountinfo_id,
+                username=row.username,
                 role=role,
                 message="Login successful.",
                 page=page,
             )
-
-        page = self._abstraction.build_error_page("login_page", "Invalid email or password.")
-        return LoginResponse(success=False, message="Invalid email or password.", page=page)
-
+ 
+        page = self._abstraction.build_error_page("login_page", "Invalid username or password.")
+        return LoginResponse(
+            success=False,
+            message="Invalid username or password.",
+            page=page,
+        )
+ 
     # -----------------------------------------------------------------------
     # UML: createAccount(...)
     # -----------------------------------------------------------------------
-
-    async def create_account(self, request: CreateAccountRequest) -> CreateAccountResponse:
-        user_id = self._account_create.create_account(request)
-
-        if user_id:
+ 
+    async def create_account(
+        self, request: CreateAccountRequest
+    ) -> CreateAccountResponse:
+        row = await self._account_create.create_account(request)
+ 
+        if row:
             page = self._abstraction.build_success_page(
-                "create_profile_page", f"Account '{request.username}' created successfully."
+                "create_profile_page",
+                f"Account '{request.username}' created successfully.",
             )
-            return CreateAccountResponse(success=True, user_id=user_id,
-                                         message="Account created successfully.", page=page)
-
+            return CreateAccountResponse(
+                success=True,
+                accountinfo_id=row.accountinfo_id,
+                username=row.username,
+                message="Account created successfully.",
+                page=page,
+            )
+ 
         page = self._abstraction.build_error_page(
             "create_profile_page",
-            f"Could not create account — email '{request.email}' may already exist.",
+            f"Username '{request.username}' or email is already in use.",
         )
         return CreateAccountResponse(
             success=False,
-            message=f"Account creation failed for email '{request.email}'.",
+            message=f"Account creation failed for username '{request.username}'.",
             page=page,
         )
-
+ 
     # -----------------------------------------------------------------------
     # UML: viewAccount()
     # -----------------------------------------------------------------------
-
-    async def view_account(self, user_id: str) -> ViewAccountResponse:
-        info = self._account_view.view_account(user_id)
-        if info is None:
-            raise ValueError(f"Account '{user_id}' not found.")
-
-        account_response = AccountInfoResponse(**info.model_dump())
+ 
+    async def view_account(self, username: str) -> ViewAccountResponse:
+        row = await self._account_view.view_account(username)
+        if row is None:
+            raise ValueError(f"Account '{username}' not found.")
+ 
+        account_response = _row_to_response(row)
         self._abstraction.set_current_account(account_response)
-        page = self._abstraction.build_info_page("account_page", f"Viewing account '{user_id}'.")
+        page = self._abstraction.build_info_page("account_page", f"Viewing account '{username}'.")
         return ViewAccountResponse(account_info=account_response, page=page)
-
+ 
     # -----------------------------------------------------------------------
     # UML: editAccount(...)
     # -----------------------------------------------------------------------
-
-    async def edit_account(self, user_id: str, request: EditAccountRequest) -> EditAccountResponse:
-        success = self._account_edit.edit_account(user_id, request)
-
+ 
+    async def edit_account(
+        self, username: str, request: EditAccountRequest
+    ) -> EditAccountResponse:
+        row = await self._account_db.retrieve_by_username(username)
+        if row is None:
+            page = self._abstraction.build_error_page("account_error", f"Account '{username}' not found.")
+            return EditAccountResponse(success=False, message=f"Account '{username}' not found.", page=page)
+ 
+        success = await self._account_edit.edit_account(
+            accountinfo_id=row.accountinfo_id,
+            request=request,
+            actor_id=row.accountinfo_id,
+        )
+ 
         if success:
             page = self._abstraction.build_success_page("account_success", "Account updated successfully.")
             return EditAccountResponse(success=True, message="Account updated successfully.", page=page)
-
-        page = self._abstraction.build_error_page(
-            "account_error", f"Could not update account '{user_id}'."
-        )
-        return EditAccountResponse(
-            success=False, message=f"Account update failed for user_id '{user_id}'.", page=page
-        )
-
+ 
+        page = self._abstraction.build_error_page("account_error", "Account update failed.")
+        return EditAccountResponse(success=False, message="Account update failed.", page=page)
+ 
     # -----------------------------------------------------------------------
-    # Audit log accessors
+    # AuditLogView
     # -----------------------------------------------------------------------
-
-    def get_audit_log(
-        self, user_id: Optional[str] = None, page: int = 1, page_size: int = 20
+ 
+    async def get_audit_log(
+        self,
+        user_id: Optional[uuid.UUID] = None,
+        page: int = 1,
+        page_size: int = 20,
     ) -> AuditLogPageResponse:
-        all_events = self._audit_log.get_audit_information(user_id=user_id, limit=page_size * page)
-        start = (page - 1) * page_size
-        entries = [
-            AuditLogEntryResponse(
-                userId=e.userId, EventType=e.EventType,
-                EventDesc=e.EventDesc, EventDate=e.EventDate,
-            )
-            for e in all_events[start: start + page_size]
-        ]
-        return AuditLogPageResponse(entries=entries, total=len(all_events), page=page, page_size=page_size)
-
-    def get_audit_event_display(
-        self, user_id: Optional[str] = None, limit: int = 20
+        all_rows = await self._audit_log.get_audit_information(
+            user_id=user_id, limit=page_size * page
+        )
+        start   = (page - 1) * page_size
+        end     = start + page_size
+        entries = [_audit_row_to_response(r) for r in all_rows[start:end]]
+        return AuditLogPageResponse(
+            entries=entries, total=len(all_rows), page=page, page_size=page_size
+        )
+ 
+    async def get_audit_event_display(
+        self,
+        user_id: Optional[uuid.UUID] = None,
+        limit: int = 20,
     ) -> List[AuditLogEntryResponse]:
-        return self._abstraction.get_audit_events(limit=limit, user_id=user_id)
+        rows = await self._audit_log.get_audit_information(user_id=user_id, limit=limit)
+        return [_audit_row_to_response(r) for r in rows]
+    
+    async def initialise(self) -> None:
+        """
+        Prepare the controller for operation. 
+        This is called during the FastAPI lifespan startup.
+        """
+        # If AccountDatabase or AuditLogDataClass need to 
+        # warm up a connection pool or check DB health, do it here.
+        # Example: await self._account_db.verify_connection()
+        pass
 
-
+    async def shutdown(self) -> None:
+        """
+        Gracefully shut down sub-components.
+        This is called during the FastAPI lifespan shutdown.
+        """
+        # Clear the in-memory abstraction cache on shutdown
+        self._abstraction.clear_session()
+        
+        # If you added an HTTP client or a specific worker to 
+        # any sub-component, close it here.
+        # Example: await self._audit_log.close_session()
+        pass
+ 
+ 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-def _now() -> int:
-    return int(time.time())
-
-def _iso_now() -> str:
-    from datetime import datetime, timezone
-    return datetime.now(timezone.utc).isoformat()
+ 
+def _hash_password(password: str) -> str:
+    """
+    SHA-256 placeholder. Replace with bcrypt/argon2 in production:
+      pip install bcrypt
+      bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    """
+    return hashlib.sha256(password.encode()).hexdigest()
+ 
+ 
+def _row_to_schema(row: AccountInformation) -> AccountInfoSchema:
+    return AccountInfoSchema(
+        accountinfo_id=row.accountinfo_id,
+        username=row.username,
+        email=row.email,
+        role=UserRole(row.role),
+        phone_number=row.phone_number,
+        is_active=row.is_active or True,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+        last_login=row.last_login,
+        user_id=row.user_id,
+    )
+ 
+ 
+def _row_to_response(row: AccountInformation) -> AccountInfoResponse:
+    return AccountInfoResponse(
+        accountinfo_id=row.accountinfo_id,
+        username=row.username,
+        email=row.email,
+        role=UserRole(row.role),
+        phone_number=row.phone_number,
+        is_active=row.is_active or True,
+        created_at=row.created_at,
+        last_login=row.last_login,
+    )
+ 
+ 
+def _audit_row_to_response(row: AuditLogData) -> AuditLogEntryResponse:
+    return AuditLogEntryResponse(
+        log_id=row.log_id,
+        event_type=AuditEventType(row.event_type),
+        action_description=row.action_description,
+        user_id=row.user_id,
+        entity_type=row.entity_type,
+        entity_id=row.entity_id,
+        status=AuditStatus(row.status or "success"),
+        ip_address=row.ip_address,
+        timestamp=row.timestamp,
+    )

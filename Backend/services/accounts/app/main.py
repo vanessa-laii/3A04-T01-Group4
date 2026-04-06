@@ -32,18 +32,27 @@ from app.dependencies import get_account_management_controller
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Initialise the AccountManagementController on startup and shut it
-    down on exit. Database connection pools and the HTTP
-    client used for City agent callbacks are opened / closed here.
+    Initialise the AccountManagementController on startup.
     """
-    controller: AccountManagementController = get_account_management_controller()
-    await controller.initialise()
-    app.state.controller = controller
-
-    yield
-
-    await controller.shutdown()
-
+    # 1. Manually invoke the database session generator
+    from app.database import get_db
+    
+    async for session in get_db():
+        # 2. Await the controller creation
+        controller = await get_account_management_controller(session)
+        
+        # 3. Initialise and store in app state
+        await controller.initialise()
+        app.state.controller = controller
+        
+        try:
+            yield
+        finally:
+            # 4. Cleanup
+            await controller.shutdown()
+        
+        # We break here because we only need one session for the lifespan setup
+        break
 
 # ---------------------------------------------------------------------------
 # Application factory

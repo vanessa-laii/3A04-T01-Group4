@@ -14,6 +14,8 @@ from __future__ import annotations
 
 from typing import List, Optional
 
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.controller import DataProcessingController
@@ -26,9 +28,9 @@ from app.models import (
     SensorDataSchema,
     SensorDatabaseQueryParams,
     SensorDatabaseQueryResponse,
-    SensorDatabaseRecord,
-    SensorMetricType,
     SuccessResponse,
+    DataQualityFlag,
+    MetricType
 )
 
 router = APIRouter()
@@ -171,7 +173,7 @@ async def get_latest_sensor_data(
 
 @router.get(
     "/data/latest/record",
-    response_model=SensorDatabaseRecord,
+    response_model=SensorDataSchema,
     tags=["Sensor Data"],
     summary="Get the latest SensorDatabase record",
     description=(
@@ -182,8 +184,8 @@ async def get_latest_sensor_data(
 )
 async def get_latest_record(
     controller: DataProcessingController = Depends(get_data_processing_controller),
-) -> SensorDatabaseRecord:
-    record = controller.get_latest_record()
+) -> SensorDataSchema:
+    record = controller.get_latest_sensor_data()
     if record is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -208,17 +210,21 @@ async def get_latest_record(
 )
 async def query_database(
     region: Optional[str] = Query(None, example="Downtown"),
-    metric_type: Optional[SensorMetricType] = Query(None),
-    from_timestamp: Optional[str] = Query(None, example="2025-06-01T00:00:00Z"),
-    to_timestamp: Optional[str] = Query(None, example="2025-06-01T23:59:59Z"),
+    metric_type: Optional[MetricType] = Query(None),
+    sensor_id: Optional[str] = None,
+    from_timestamp: Optional[datetime] = Query(None, example="2025-06-01T00:00:00Z"),
+    to_timestamp: Optional[datetime] = Query(None, example="2025-06-01T23:59:59Z"),
+    data_quality_flag: Optional[DataQualityFlag] = None,
     limit: int = Query(100, ge=1, le=1000),
     controller: DataProcessingController = Depends(get_data_processing_controller),
 ) -> SensorDatabaseQueryResponse:
     params = SensorDatabaseQueryParams(
-        region=region,
+        geographic_zone=region,
         metric_type=metric_type,
-        from_timestamp=from_timestamp,
-        to_timestamp=to_timestamp,
+        sensor_id=sensor_id,
+        from_recorded_at=from_timestamp,
+        to_recorded_at=to_timestamp,
+        data_quality_flag=data_quality_flag,
         limit=limit,
     )
     return await controller.query_database(params)
@@ -226,15 +232,15 @@ async def query_database(
 
 @router.get(
     "/database/records/{record_id}",
-    response_model=SensorDatabaseRecord,
+    response_model=PipelineResult,
     tags=["Database"],
     summary="Get a specific SensorDatabase record by ID",
 )
 async def get_record(
     record_id: str,
     controller: DataProcessingController = Depends(get_data_processing_controller),
-) -> SensorDatabaseRecord:
-    record = await controller.get_record(record_id)
+) -> PipelineResult:
+    record = controller.get_result_by_source(record_id)
     if record is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -259,16 +265,17 @@ async def get_record(
     ),
 )
 async def get_location(
-    region: Optional[str] = Query(None, example="Downtown"),
+    sensor_id: Optional[str] = None, 
+    geographic_zone: Optional[str] = None,
     controller: DataProcessingController = Depends(get_data_processing_controller),
 ) -> LocationResponse:
-    location = controller.get_location(region=region)
+    location = await controller.get_location(sensor_id=sensor_id, geographic_zone=geographic_zone)
     if location is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=(
                 f"No location data available"
-                + (f" for region '{region}'." if region else ".")
+                + (f" for region '{geographic_zone}'." if geographic_zone else ".")
             ),
         )
     return location
