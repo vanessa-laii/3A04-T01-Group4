@@ -25,6 +25,15 @@ services:
     ports: ["8005:8000"]
     env_file: [.env]
 
+  sensor_data:
+    build: ../ExternalSensorData
+    environment:
+      - API_URL=http://data_processing:8000/api/v1/sensor/ingest
+      - MQTT_BROKER=localhost
+      - MQTT_PORT=9999
+    depends_on:
+      - data_processing
+
   db:
     image: postgres:15
     env_file: [.env]
