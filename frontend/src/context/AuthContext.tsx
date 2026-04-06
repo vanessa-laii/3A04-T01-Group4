@@ -61,27 +61,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
+  // async function signIn(email: string, password: string): Promise<{ error: string | null }> {
+  //   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
+  //   if (error) return { error: 'Invalid email or password.' }
+
+  //   const prof = await fetchProfile(data.user.id)
+
+  //   if (!prof) {
+  //     await supabase.auth.signOut()
+  //     return { error: 'Access denied — no account profile found.' }
+  //   }
+
+  //   if (!prof.is_active) {
+  //     await supabase.auth.signOut()
+  //     return { error: 'Access denied — account is inactive.' }
+  //   }
+
+  //   setUser(data.user)
+  //   setProfile(prof)
+  //   return { error: null }
+  // }
+
   async function signIn(email: string, password: string): Promise<{ error: string | null }> {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  const username = email.split('@')[0];
+  try {
+    const response = await fetch('http://localhost:8005/api/v1/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+    });
 
-    if (error) return { error: 'Invalid email or password.' }
-
-    const prof = await fetchProfile(data.user.id)
-
-    if (!prof) {
-      await supabase.auth.signOut()
-      return { error: 'Access denied — no account profile found.' }
+    if (!response.ok) {
+      const errorData = await response.json();
+      return { error: errorData.detail || 'Invalid username or password.' };
     }
 
-    if (!prof.is_active) {
-      await supabase.auth.signOut()
-      return { error: 'Access denied — account is inactive.' }
-    }
+    const data = await response.json();
 
-    setUser(data.user)
-    setProfile(prof)
-    return { error: null }
+    if (data.success) {
+      // Map your backend response to your React state
+      setUser({ id: data.accountinfo_id, email: username , app_metadata: {}, user_metadata: {}, aud: "authenticated", created_at: ""});
+      setProfile({
+        role: data.role,
+        message: data.message,
+        ...data.page
+      });
+      return { error: null };
+    } else {
+      return { error: data.message || 'Login failed.' };
+    }
+  } catch (err) {
+    console.error('Connection error:', err);
+    return { error: 'Could not connect to the authentication service.' };
   }
+}
 
   async function signOut() {
     await supabase.auth.signOut()
