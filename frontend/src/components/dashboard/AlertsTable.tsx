@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { AlertTriangle, CheckCircle, Clock, Loader, X } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Loader, X } from 'lucide-react'
 import { alertsFetch } from '../../lib/api'
 
 type TriggeredStatus = 'active' | 'acknowledged' | 'resolved' | 'dismissed'

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  AlertTriangle, CheckCircle, Clock, Loader2, Plus, X,
-  Bell, BellOff, ShieldCheck, Eye, RefreshCw, Send,
+  AlertTriangle, CheckCircle, Loader2, Plus, X,
+  Bell, ShieldCheck, Eye, RefreshCw, Send,
 } from 'lucide-react'
 import { alertsFetch } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
