@@ -75,6 +75,7 @@ class ConfiguredAlertSchema(BaseModel):
     alert_visibility:     AlertVisibility
     alert_name:           Annotated[str  , Field(example="Downtown AQI High Alert")]
     threshold_value_max:  Optional[float]        = None
+    condition:            str                    = 'ABOVE'
     description:          Optional[str]          = None
     is_active:            bool                   = True
     created_at:           Optional[datetime]     = None
@@ -94,6 +95,7 @@ class CreateAlertRuleRequest(BaseModel):
     alert_visibility:     AlertVisibility
     alert_name:           Annotated[str  , Field(example="Downtown AQI High Alert")]
     threshold_value_max:  Optional[float] = None
+    condition:            str             = 'ABOVE'
     description:          Optional[str]   = None
  
  
@@ -111,8 +113,10 @@ class EditAlertRuleRequest(BaseModel):
     threshold_value_max:  Optional[float]              = None
     timeframe_minutes:    Optional[int]                = None
     geographic_area:      Optional[str]                = None
+    environmental_metric: Optional[EnvironmentalMetric] = None
     alert_visibility:     Optional[AlertVisibility]    = None
     alert_name:           Optional[str]                = None
+    condition:            Optional[str]                = None
     description:          Optional[str]                = None
     is_active:            Optional[bool]               = None
  
