@@ -8,9 +8,9 @@ import { Stack } from 'expo-router';
 
 const INITIAL_REGION = {
   latitude: 43.2580,
-  longitude: -79.9180,
-  latitudeDelta: 0.3,
-  longitudeDelta: 0.1,
+  longitude: -79.8655,
+  latitudeDelta: 0.1,
+  longitudeDelta: 0.35,
 };
 
 export default function MapScreen() {
@@ -27,24 +27,38 @@ export default function MapScreen() {
     {
       id: 1,
       title: 'PM2.5 above threshold',
-      description: 'Zone C - 41 ug/m',
-      lat: 43.2580,
-      lng: -79.9180
+      description: 'West End & Dundas - 41 ug/m',
+      lat: 43.2692,
+      lng: -79.9555
     },
     {
       id: 2,
-      title: 'UV Index Critically High',
-      description: 'Zone A - 11.2 UV',
-      lat: 43.23,
-      lng: -79.880
+      title: 'UV index critically high',
+      description: 'Downtown Core - 11.2 UV',
+      lat: 43.2569,
+      lng: -79.8713
     },
     {
       id: 3,
-      title: 'Temperature Spike detected',
-      description: 'Zone B - 38.4 C',
-      lat: 43.25,
-      lng: -79.880
-    }
+      title: 'High-Noise level detected',
+      description: 'Hamilton Mountain - 60.16 dB',
+      lat: 43.223,
+      lng: -79.8655
+    },
+    {
+      id: 4,
+      title: 'Temperature spike detected',
+      description: 'Ancaster - 38.4 C',
+      lat: 43.2085,
+      lng: -79.9945
+    },
+    {
+      id: 5,
+      title: 'Low air quality detected',
+      description: 'East End & Stoney Creek - 110 AQI',
+      lat: 43.235,
+      lng: -79.762
+    },
   ];
 
   const themeStyles = {
