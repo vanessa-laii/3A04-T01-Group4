@@ -117,6 +117,7 @@ class ConfiguredAlerts(Base):
     alert_visibility: Mapped[str] = mapped_column(String(50), nullable=False)
     alert_name: Mapped[str] = mapped_column(String(255), nullable=False)
     threshold_value_max: Mapped[Optional[float]] = mapped_column(Double(53))
+    condition: Mapped[Optional[str]] = mapped_column(String(10), server_default=text("'ABOVE'::character varying"))
     description: Mapped[Optional[str]] = mapped_column(Text)
     is_active: Mapped[Optional[bool]] = mapped_column(Boolean, server_default=text('true'))
     created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True), server_default=text('CURRENT_TIMESTAMP'))
@@ -155,3 +156,16 @@ class TriggeredAlerts(Base):
 
     account_information: Mapped[Optional['AccountInformation']] = relationship('AccountInformation', back_populates='triggered_alerts')
     alert: Mapped['ConfiguredAlerts'] = relationship('ConfiguredAlerts', back_populates='triggered_alerts')
+
+
+class TimeSeriesSensorData(Base):
+    """Read-only mirror used by the alerts service for immediate rule evaluation on approval."""
+    __tablename__ = 'time_series_sensor_data'
+
+    data_id:          Mapped[uuid.UUID]             = mapped_column(Uuid, primary_key=True, server_default=text('gen_random_uuid()'))
+    sensor_id:        Mapped[str]                   = mapped_column(String(255), nullable=False)
+    metric_type:      Mapped[str]                   = mapped_column(String(100), nullable=False)
+    metric_value:     Mapped[float]                 = mapped_column(Double(53), nullable=False)
+    unit:             Mapped[str]                   = mapped_column(String(50), nullable=False)
+    recorded_at:      Mapped[datetime.datetime]     = mapped_column(DateTime(True), nullable=False)
+    geographic_zone:  Mapped[str]                   = mapped_column(String(255), nullable=False)

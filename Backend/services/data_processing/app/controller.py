@@ -244,18 +244,21 @@ class AlertRuleChecker:
             )
  
             for rule in rules:
+                condition = getattr(rule, 'condition', 'ABOVE') or 'ABOVE'
                 breach_value = self._evaluate_threshold(
                     value=reading.metric_value,
                     threshold_min=rule.threshold_value,
                     threshold_max=rule.threshold_value_max,
+                    condition=condition,
                 )
                 if breach_value is None:
                     continue  # reading is within acceptable range
- 
+
                 severity = self._calculate_severity(
                     value=reading.metric_value,
                     threshold=rule.threshold_value,
                     threshold_max=rule.threshold_value_max,
+                    condition=condition,
                 )
                 is_public = rule.alert_visibility == "Public Facing"
  
@@ -325,37 +328,42 @@ class AlertRuleChecker:
         value: float,
         threshold_min: float,
         threshold_max: Optional[float],
+        condition: str = 'ABOVE',
     ) -> Optional[float]:
         """
         Returns the breaching value if the reading crosses a threshold,
         or None if the reading is within acceptable limits.
- 
-        For minimum-only rules (threshold_max is None):
-          Breaches when value > threshold_min.
- 
+
         For range rules (threshold_max is set):
           Breaches when value < threshold_min OR value > threshold_max.
+
+        For BELOW rules (condition='BELOW', no threshold_max):
+          Breaches when value < threshold_min.
+
+        For ABOVE rules (default, no threshold_max):
+          Breaches when value > threshold_min.
         """
         if threshold_max is not None:
             if value < threshold_min or value > threshold_max:
                 return value
             return None
-        if value > threshold_min:
-            return value
-        return None
+        if condition == 'BELOW':
+            return value if value < threshold_min else None
+        return value if value > threshold_min else None
  
     @staticmethod
     def _calculate_severity(
         value: float,
         threshold: float,
         threshold_max: Optional[float],
+        condition: str = 'ABOVE',
     ) -> str:
         """
         Assign severity based on how far the reading exceeds the threshold.
- 
+
         For range rules, use the distance from the nearer boundary.
-        For minimum rules, use the percentage above the threshold.
- 
+        For ABOVE/BELOW rules, use the percentage beyond the threshold.
+
           < 10% over  → Low
           10–25% over → Medium
           25–50% over → High
@@ -363,7 +371,7 @@ class AlertRuleChecker:
         """
         if threshold == 0:
             return "High"
- 
+
         if threshold_max is not None:
             # Distance from the nearer boundary as % of the range
             range_size = threshold_max - threshold
@@ -374,9 +382,11 @@ class AlertRuleChecker:
             else:
                 excess = threshold - value
             pct = (excess / range_size) * 100
+        elif condition == 'BELOW':
+            pct = ((threshold - value) / abs(threshold)) * 100
         else:
             pct = ((value - threshold) / abs(threshold)) * 100
- 
+
         if pct < 10:
             return "Low"
         if pct < 25:

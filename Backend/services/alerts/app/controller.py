@@ -24,7 +24,7 @@ from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
  
 from app.abstraction import AlertsAbstraction
-from app.orm_models import ConfiguredAlerts, TriggeredAlerts
+from app.orm_models import ConfiguredAlerts, TriggeredAlerts, TimeSeriesSensorData
 from app.models import (
     AcknowledgeAlertRequest,
     AcknowledgeAlertResponse,
@@ -244,6 +244,7 @@ class CityAlertManagement(AlertManagement):
         city_service_url: str,
         http_client: httpx.AsyncClient,
     ):
+        self._session        = session
         self._configured_db  = ConfiguredAlertsDatabase(session)
         self._triggered_db   = TriggeredAlertsDatabase(session)
         self._abstraction    = AlertsAbstraction()
@@ -266,6 +267,7 @@ class CityAlertManagement(AlertManagement):
             alert_visibility=request.alert_visibility.value,
             alert_name=request.alert_name,
             threshold_value_max=request.threshold_value_max,
+            condition=request.condition,
             description=request.description,
             status=ConfiguredAlertStatus.PENDING.value,
         )
@@ -324,20 +326,19 @@ class CityAlertManagement(AlertManagement):
                 success=False, alert_id=alert_id,
                 message=f"Alert rule '{alert_id}' not found.",
             )
-        if row.status == ConfiguredAlertStatus.REJECTED.value:
-            return EditAlertRuleResponse(
-                success=False, alert_id=alert_id,
-                message="Cannot edit a rejected alert rule.",
-            )
- 
-        if request.threshold_value     is not None: row.threshold_value     = request.threshold_value
-        if request.threshold_value_max is not None: row.threshold_value_max = request.threshold_value_max
-        if request.timeframe_minutes   is not None: row.timeframe_minutes   = request.timeframe_minutes
-        if request.geographic_area     is not None: row.geographic_area     = request.geographic_area
-        if request.alert_visibility    is not None: row.alert_visibility    = request.alert_visibility.value
-        if request.alert_name          is not None: row.alert_name          = request.alert_name
-        if request.description         is not None: row.description         = request.description
-        if request.is_active           is not None: row.is_active           = request.is_active
+        if request.threshold_value      is not None: row.threshold_value      = request.threshold_value
+        if request.threshold_value_max  is not None: row.threshold_value_max  = request.threshold_value_max
+        if request.timeframe_minutes    is not None: row.timeframe_minutes    = request.timeframe_minutes
+        if request.geographic_area      is not None: row.geographic_area      = request.geographic_area
+        if request.environmental_metric is not None: row.environmental_metric = request.environmental_metric.value
+        if request.alert_visibility     is not None: row.alert_visibility     = request.alert_visibility.value
+        if request.alert_name           is not None: row.alert_name           = request.alert_name
+        if request.condition            is not None: row.condition            = request.condition
+        if request.description          is not None: row.description          = request.description
+        if request.is_active            is not None: row.is_active            = request.is_active
+
+        # Any edit resets the rule to pending — must be re-submitted and re-approved
+        row.status = ConfiguredAlertStatus.PENDING.value
  
         row.updated_at = datetime.now(timezone.utc)
         saved = await self._configured_db.save(row)
@@ -435,7 +436,10 @@ class CityAlertManagement(AlertManagement):
         forwarded = False
         if saved.alert_visibility == AlertVisibility.PUBLIC_FACING.value:
             forwarded = await self._forward_to_city(schema)
- 
+
+        # Immediately evaluate against latest sensor data in case condition already violated
+        await self._evaluate_on_approval(saved)
+
         logger.info("Alert rule approved: id=%s forwarded=%s", alert_id, forwarded)
         return ApproveAlertRuleResponse(
             success=True, alert_id=alert_id,
@@ -532,9 +536,78 @@ class CityAlertManagement(AlertManagement):
             logger.error("Failed to forward alert to City agent: %s", exc)
             return False
 
+    async def _evaluate_on_approval(self, rule: ConfiguredAlerts) -> None:
+        """
+        After a rule is approved, check whether the most recent sensor reading
+        for that zone+metric already violates the threshold. If so, create an
+        immediate triggered_alert so operators see it right away.
+        """
+        try:
+            result = await self._session.execute(
+                select(TimeSeriesSensorData)
+                .where(
+                    and_(
+                        TimeSeriesSensorData.geographic_zone == rule.geographic_area,
+                        TimeSeriesSensorData.metric_type     == rule.environmental_metric,
+                    )
+                )
+                .order_by(TimeSeriesSensorData.recorded_at.desc())
+                .limit(1)
+            )
+            reading = result.scalar_one_or_none()
+            if reading is None:
+                return
+
+            condition     = rule.condition or 'ABOVE'
+            threshold_max = rule.threshold_value_max
+
+            if threshold_max is not None:
+                breached = reading.metric_value < rule.threshold_value or reading.metric_value > threshold_max
+            elif condition == 'BELOW':
+                breached = reading.metric_value < rule.threshold_value
+            else:
+                breached = reading.metric_value > rule.threshold_value
+
+            if not breached:
+                return
+
+            # Calculate severity
+            if threshold_max is not None:
+                range_size = threshold_max - rule.threshold_value
+                if range_size <= 0:
+                    severity = "Medium"
+                else:
+                    excess = (reading.metric_value - threshold_max) if reading.metric_value > threshold_max else (rule.threshold_value - reading.metric_value)
+                    pct = (excess / range_size) * 100
+                    severity = "Low" if pct < 10 else "Medium" if pct < 25 else "High" if pct < 50 else "Critical"
+            elif rule.threshold_value == 0:
+                severity = "High"
+            else:
+                if condition == 'BELOW':
+                    pct = ((rule.threshold_value - reading.metric_value) / abs(rule.threshold_value)) * 100
+                else:
+                    pct = ((reading.metric_value - rule.threshold_value) / abs(rule.threshold_value)) * 100
+                severity = "Low" if pct < 10 else "Medium" if pct < 25 else "High" if pct < 50 else "Critical"
+
+            await self._triggered_db.create(
+                alert_id=rule.alert_id,
+                triggered_value=reading.metric_value,
+                sensor_id=reading.sensor_id,
+                region=reading.geographic_zone,
+                severity=severity,
+                is_public=rule.alert_visibility == AlertVisibility.PUBLIC_FACING.value,
+            )
+            logger.info(
+                "Immediate trigger on approval: rule=%s metric=%s value=%.2f threshold=%.2f condition=%s severity=%s",
+                rule.alert_id, rule.environmental_metric, reading.metric_value,
+                rule.threshold_value, condition, severity,
+            )
+        except Exception as exc:
+            logger.error("_evaluate_on_approval failed: %s", exc)
+
     async def initialise(self) -> None:
         """
-        Prepare the controller for operation. 
+        Prepare the controller for operation.
         This is called during the FastAPI lifespan startup.
         """
         # If AccountDatabase or AuditLogDataClass need to 
@@ -571,8 +644,9 @@ def _configured_to_schema(row: ConfiguredAlerts) -> ConfiguredAlertSchema:
         alert_visibility=AlertVisibility(row.alert_visibility),
         alert_name=row.alert_name,
         threshold_value_max=row.threshold_value_max,
+        condition=row.condition or 'ABOVE',
         description=row.description,
-        is_active=row.is_active or True,
+        is_active=row.is_active if row.is_active is not None else True,
         created_at=row.created_at,
         updated_at=row.updated_at,
         approved_by=row.approved_by,

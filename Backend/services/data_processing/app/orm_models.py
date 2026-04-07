@@ -165,6 +165,7 @@ class ConfiguredAlerts(Base):
     alert_visibility: Mapped[str] = mapped_column(String(50), nullable=False)
     alert_name: Mapped[str] = mapped_column(String(255), nullable=False)
     threshold_value_max: Mapped[Optional[float]] = mapped_column(Double(53))
+    condition: Mapped[Optional[str]] = mapped_column(String(10), server_default=text("'ABOVE'::character varying"))
     description: Mapped[Optional[str]] = mapped_column(Text)
     is_active: Mapped[Optional[bool]] = mapped_column(Boolean, server_default=text('true'))
     created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime(True), server_default=text('CURRENT_TIMESTAMP'))
