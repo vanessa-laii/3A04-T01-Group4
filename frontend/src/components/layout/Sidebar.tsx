@@ -21,7 +21,7 @@ const navItems: NavItem[] = [
   { label: 'Dashboard', path: '/dashboard',      Icon: LayoutDashboard },
   { label: 'Alerts',    path: '/alerts',          Icon: BellRing },
   { label: 'Sensors',   path: '/sensors',         Icon: RadioTower },
-  { label: 'Audit Log', path: '/logs',            Icon: ScrollText },
+  { label: 'Audit Log', path: '/auditlog',            Icon: ScrollText },
   { label: 'Accounts',  path: '/admin/accounts',  Icon: Users, adminOnly: true },
   { label: 'Profile',   path: '/profile',          Icon: UserCircle },
 ]
