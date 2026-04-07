@@ -23,11 +23,12 @@ from __future__ import annotations
  
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
  
 import httpx
 from sqlalchemy import select, and_
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
  
 from app.abstraction import DataAbstraction
@@ -254,6 +255,19 @@ class AlertRuleChecker:
                 if breach_value is None:
                     continue  # reading is within acceptable range
 
+                # Check 60-minute cooldown: don't re-fire too soon after resolve/dismiss
+                cooldown_cutoff = datetime.now(timezone.utc) - timedelta(minutes=60)
+                cooldown_result = await self._session.execute(
+                    select(TriggeredAlerts).where(
+                        and_(
+                            TriggeredAlerts.alert_id == rule.alert_id,
+                            TriggeredAlerts.triggered_at >= cooldown_cutoff,
+                        )
+                    ).limit(1)
+                )
+                if cooldown_result.scalar_one_or_none() is not None:
+                    continue  # within cooldown window
+
                 severity = self._calculate_severity(
                     value=reading.metric_value,
                     threshold=rule.threshold_value,
@@ -261,8 +275,11 @@ class AlertRuleChecker:
                     condition=condition,
                 )
                 is_public = rule.alert_visibility == "Public Facing"
- 
-                row = TriggeredAlerts(
+
+                # Use DB-level upsert so concurrent sensor readings can't create duplicates.
+                # The unique partial index uq_one_active_alert_per_rule enforces one
+                # active/acknowledged alert per rule at the database level.
+                stmt = pg_insert(TriggeredAlerts).values(
                     alert_id=rule.alert_id,
                     triggered_value=reading.metric_value,
                     sensor_id=sensor_data.sensor_id,
@@ -270,8 +287,10 @@ class AlertRuleChecker:
                     alert_severity=severity,
                     is_public=is_public,
                     status="active",
-                )
-                self._session.add(row)
+                ).on_conflict_do_nothing()
+                result = await self._session.execute(stmt)
+                if result.rowcount == 0:
+                    continue  # duplicate blocked by DB constraint
  
                 triggered.append(
                     TriggeredAlertRecord(
