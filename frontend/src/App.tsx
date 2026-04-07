@@ -7,6 +7,7 @@ import Accounts from './pages/admin/Accounts'
 import Profile from './pages/Profile'
 import Alerts from './pages/Alerts'
 import Sensors from './pages/Sensors'
+import AuditLog from './pages/AuditLog'
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/dashboard"       element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/alerts"          element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
           <Route path="/sensors"         element={<ProtectedRoute><Sensors /></ProtectedRoute>} />
+          <Route path="/auditlog"         element={<ProtectedRoute><AuditLog /></ProtectedRoute>} />
           <Route path="/admin/accounts"  element={<ProtectedRoute adminOnly><Accounts /></ProtectedRoute>} />
           <Route path="/profile"         element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="*"                element={<Navigate to="/login" replace />} />
